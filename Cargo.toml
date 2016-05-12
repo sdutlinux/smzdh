@@ -1,0 +1,6 @@
+[package]
+name = "smzdh"
+version = "0.1.0"
+authors = ["paomian <qtang@leancloud.rocks>"]
+
+[dependencies]
