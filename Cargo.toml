@@ -4,3 +4,9 @@ version = "0.1.0"
 authors = ["paomian <qtang@leancloud.rocks>"]
 
 [dependencies]
+hyper = "0.9"
+router = "*"
+
+[dependencies.iron]
+version = "*"
+
