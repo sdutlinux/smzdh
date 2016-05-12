@@ -6,6 +6,14 @@ authors = ["paomian <qtang@leancloud.rocks>"]
 [dependencies]
 hyper = "0.9"
 router = "*"
+serde = "*"
+serde_json = "*"
+serde_macros = "*"
+websocket = "0.17.0"
+postgres = "0.11"
+log = "*"
+log4rs = "*"
+clippy = "*"
 
 [dependencies.iron]
 version = "*"
