@@ -12,9 +12,11 @@ serde_macros = "*"
 websocket = "0.17.0"
 postgres = "0.11"
 log = "*"
-log4rs = "*"
 clippy = "*"
+lazy_static = "0.1.*"
+iron = "*"
+redis = "0.5.3"
 
-[dependencies.iron]
+[dependencies.log4rs]
 version = "*"
-
+features = ["yaml"]
