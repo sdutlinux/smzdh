@@ -24,6 +24,7 @@ use router::Router;
 
 fn handler(req: &mut Request) -> IronResult<Response> {
     info!("Some thing {:?}",req.extensions.len());
+    info!("{:?} \n {:?}",req,req.headers);
     //println!("{}",serde_json::to_string(&BTreeMap::<String,String>::new()).unwrap());
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
     Ok(Response::with((status::Ok, query)))
@@ -43,6 +44,7 @@ fn main() {
     router.get("/", handler);
     //router.get("/:query", handler);
     router.get("/hello", test);
-
-    let _ = Iron::new(router).http("localhost:3000");
+    let mut chain = Chain::new(router);
+    chain.link_before(handlers::signin_handler::Cookies);
+    let _ = Iron::new(chain).http("localhost:3000");
 }

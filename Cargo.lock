@@ -2,7 +2,7 @@
 name = "smzdh"
 version = "0.1.0"
 dependencies = [
- "clippy 0.0.66 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.68 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "clippy"
-version = "0.0.66"
+version = "0.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quine-mc_cluskey 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
