@@ -7,7 +7,7 @@ pub struct Cookies;
 
 impl BeforeMiddleware for Cookies {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        println!("{:?},",req.headers.get_mut::<Cookie>());
+        //println!("{:?},",req.headers.get_mut::<Cookie>());
         Ok(())
     }
 }

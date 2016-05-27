@@ -1,5 +1,5 @@
 #![feature(custom_derive, plugin)]
-#![plugin(serde_macros,clippy)]
+#![plugin(serde_macros)]
 
 #[macro_use]
 extern crate log;
@@ -31,8 +31,12 @@ fn handler(req: &mut Request) -> IronResult<Response> {
 }
 
 fn test(_: &mut Request) -> IronResult<Response> {
-    database::test::test();
+    database::utils::test();
     Ok(Response::with((status::Ok, "test")))
+}
+
+fn test1(_: &mut Request) -> IronResult<Response> {
+    Ok(Response::with((status::Ok, "test1")))
 }
 
 fn main() {
@@ -40,11 +44,17 @@ fn main() {
         Ok(_) => info!("Log4rs start success"),
         Err(e) => println!("{:?}",e),
     }
+
     let mut router = Router::new();
-    router.get("/", handler);
-    //router.get("/:query", handler);
+    //router.get("/", handler);
     router.get("/hello", test);
+    let mut router1 = Router::new();
+    router1.get("/1", test1);
+    router.get("/",router1);
     let mut chain = Chain::new(router);
     chain.link_before(handlers::signin_handler::Cookies);
-    let _ = Iron::new(chain).http("localhost:3000");
+    match Iron::new(chain).http("localhost:3000") {
+        Ok(_) => info!("Server start success on 3000"),
+        Err(e) => info!("Server start fail {:?}",e),
+    }
 }
