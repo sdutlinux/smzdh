@@ -31,13 +31,9 @@ fn handler(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, query)))
 }
 
-fn test(_: &mut Request) -> IronResult<Response> {
+fn sql_test(_: &mut Request) -> IronResult<Response> {
     database::utils::test();
     Ok(Response::with((status::Ok, "test")))
-}
-
-fn test1(_: &mut Request) -> IronResult<Response> {
-    Ok(Response::with((status::Ok, "test1")))
 }
 
 fn main() {
@@ -47,7 +43,9 @@ fn main() {
     }
 
     let mut router = Router::new();
-    router.get("/hello", test);
+    router.get("/test", sql_test);
+    router.get("/hello/:query", handler);
+    router.get("/ping", handlers::api::user::test);
     let mut chain = Chain::new(router);
     chain.link_before(handlers::signin_handler::Cookies);
     match Iron::new(chain).http("localhost:3000") {
