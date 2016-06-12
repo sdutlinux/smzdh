@@ -12,6 +12,7 @@ extern crate router;
 extern crate serde_json;
 extern crate postgres;
 extern crate redis;
+extern crate crypto;
 
 
 mod database;
@@ -46,11 +47,7 @@ fn main() {
     }
 
     let mut router = Router::new();
-    //router.get("/", handler);
     router.get("/hello", test);
-    let mut router1 = Router::new();
-    router1.get("/1", test1);
-    router.get("/",router1);
     let mut chain = Chain::new(router);
     chain.link_before(handlers::signin_handler::Cookies);
     match Iron::new(chain).http("localhost:3000") {

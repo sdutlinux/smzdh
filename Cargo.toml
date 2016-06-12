@@ -4,17 +4,18 @@ version = "0.1.0"
 authors = ["paomian <qtang@leancloud.rocks>"]
 
 [dependencies]
-hyper = "0.9"
+hyper = "*"
 router = "*"
 serde = "*"
 serde_json = "*"
 serde_macros = "*"
-websocket = "0.17.0"
-postgres = "0.11"
+websocket = "*"
+postgres = "*"
 log = "*"
-lazy_static = "0.1.*"
+lazy_static = "*"
 iron = "*"
-redis = "0.5.3"
+redis = "*"
+rust-crypto = "*"
 
 [dependencies.log4rs]
 version = "*"
