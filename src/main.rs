@@ -17,6 +17,7 @@ extern crate crypto;
 
 mod database;
 mod handlers;
+mod middleware;
 
 use iron::prelude::*;
 use iron::status;
@@ -31,10 +32,7 @@ fn handler(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, query)))
 }
 
-fn sql_test(_: &mut Request) -> IronResult<Response> {
-    database::utils::test();
-    Ok(Response::with((status::Ok, "test")))
-}
+
 
 fn main() {
     match log4rs::init_file("config/log4rs.yaml", Default::default()) {
@@ -43,11 +41,11 @@ fn main() {
     }
 
     let mut router = Router::new();
-    router.get("/test", sql_test);
+    router.get("/test", middleware::sql_test);
     router.get("/hello/:query", handler);
     router.get("/ping", handlers::api::user::test);
     let mut chain = Chain::new(router);
-    chain.link_before(handlers::signin_handler::Cookies);
+    chain.link_before(middleware::Connect);
     match Iron::new(chain).http("localhost:3000") {
         Ok(_) => info!("Server start success on 3000"),
         Err(e) => info!("Server start fail {:?}",e),
