@@ -42,7 +42,8 @@ fn main() {
 
     let mut router = Router::new();
     router.get("/test", middleware::sql_test);
-    router.get("/hello/:query", handler);
+    router.get("/hello/query/:query", handler);
+    router.get("/hello/redis", handlers::hello::handler);
     router.get("/ping", handlers::api::user::test);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
