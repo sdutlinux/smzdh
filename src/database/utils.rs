@@ -21,6 +21,9 @@ pub fn redis_conn() -> Result<RedisConn,redis::RedisError> {
 
 pub fn test() {
     let c = conn();
-    let result = c.map(|x| x.query("SELECT * from pg_user;", &[]));
+    let result = c.map(
+        |x| {
+            x.query("SELECT * from pg_user;", &[])
+        });
     info!("what ? {:?}",result);
 }

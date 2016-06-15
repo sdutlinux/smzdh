@@ -6,24 +6,27 @@ use iron::headers::Cookie;
 use crypto::{ symmetriccipher, buffer, aes, blockmodes };
 use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
 use postgres::{Connection, SslMode};
+use postgres;
 use database;
 
 pub struct Connect;
 pub struct PConnect {
-    conn: Option<Connection>,
+    conn: Option<Result<Connection,postgres::error::ConnectError>>,
 }
 
 impl PConnect {
-    fn get_conn(& mut self) -> &Connection {
-        match self.conn {
-            Some(ref c) => c,
+    fn get_conn(& mut self) -> Result<&Connection,&postgres::error::ConnectError> {
+        let tmp = match self.conn.as_mut() {
+            Some(c) => c.as_ref(),
             None => {
-                self.conn = Some(database::utils::conn());
+                database::utils::conn().as_ref()
+                self.conn = Some();
                 self.get_conn()
             },
         }
     }
 }
+
 impl typemap::Key for Connect { type Value = PConnect ;}
 
 impl BeforeMiddleware for Connect {
@@ -48,9 +51,10 @@ impl BeforeMiddleware for Cookies {
 }
 
 pub fn sql_test(req: &mut Request) -> IronResult<Response> {
-    let result = req.extensions.get_mut::<Connect>()
-        .unwrap()
-        .get_conn()
-        .query("SELECT * from pg_user;", &[]);
-        Ok(Response::with((status::Ok, format!("{:?}",result))))
+    let result = req.extensions.get::<Connect>().map(|r| {
+        r.get_conn().map(|c| {
+            c.query("SELECT * from pg_user;", &[]);
+        })
+    });
+    Ok(Response::with((status::Ok, format!("{:?}",result))))
 }
