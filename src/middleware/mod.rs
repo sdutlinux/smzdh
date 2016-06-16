@@ -6,8 +6,12 @@ use iron::headers::Cookie;
 use crypto::{ symmetriccipher, buffer, aes, blockmodes };
 use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
 use postgres::{Connection, SslMode};
+use router::{Router, NoRoute};
 use postgres;
 use database;
+
+trait SMZDM {}
+impl<T> T from SMZDM {}
 
 pub struct Connect;
 pub struct PConnect {
@@ -15,12 +19,11 @@ pub struct PConnect {
 }
 
 impl PConnect {
-    fn get_conn(& mut self) -> Result<&Connection,&postgres::error::ConnectError> {
-        let tmp = match self.conn.as_mut() {
-            Some(c) => c.as_ref(),
+    fn get_conn(& mut self) -> Result<&mut Connection,&mut postgres::error::ConnectError> {
+        match self.conn {
+            Some(ref mut c) => c.as_mut(),
             None => {
-                database::utils::conn().as_ref()
-                self.conn = Some();
+                self.conn = Some(database::utils::conn());
                 self.get_conn()
             },
         }
@@ -51,10 +54,25 @@ impl BeforeMiddleware for Cookies {
 }
 
 pub fn sql_test(req: &mut Request) -> IronResult<Response> {
-    let result = req.extensions.get::<Connect>().map(|r| {
+    let result = req.extensions.get_mut::<Connect>().map(|r| {
         r.get_conn().map(|c| {
             c.query("SELECT * from pg_user;", &[]);
         })
     });
     Ok(Response::with((status::Ok, format!("{:?}",result))))
+}
+
+pub struct Custom404;
+
+
+impl AfterMiddleware for Custom404 {
+    fn catch(&self, _: &mut Request, err: IronError) -> IronResult<Response> {
+        info!("Hitting custom 404 middleware");
+
+        if let Some(_) = err.error.downcast::<NoRoute>() {
+            Ok(Response::with((status::NotFound, "Custom 404 response")))
+        } else {
+            Err(err)
+        }
+    }
 }

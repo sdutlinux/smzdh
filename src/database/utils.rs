@@ -19,11 +19,14 @@ pub fn redis_conn() -> Result<RedisConn,redis::RedisError> {
     redis::Client::open(REDIS).and_then(|c| c.get_connection())
 }
 
+
 pub fn test() {
-    let c = conn();
-    let result = c.map(
+    let mut c = conn();
+    let cc = c.as_mut();
+
+    let result = cc.map(
         |x| {
-            x.query("SELECT * from pg_user;", &[])
+            x.query("SELECT * from pg_user;", &[]);
         });
     info!("what ? {:?}",result);
 }

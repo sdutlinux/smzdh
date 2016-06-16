@@ -47,6 +47,7 @@ fn main() {
     router.get("/ping", handlers::api::user::test);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
+    chain.link_after(middleware::Custom404);
     match Iron::new(chain).http("localhost:3000") {
         Ok(_) => info!("Server start success on 3000"),
         Err(e) => info!("Server start fail {:?}",e),
