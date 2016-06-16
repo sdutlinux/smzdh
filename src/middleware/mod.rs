@@ -11,7 +11,7 @@ use postgres;
 use database;
 
 trait SMZDM {}
-impl<T> T from SMZDM {}
+impl<T> SMZDM for T {}
 
 pub struct Connect;
 pub struct PConnect {
