@@ -13,11 +13,13 @@ extern crate serde_json;
 extern crate postgres;
 extern crate redis;
 extern crate crypto;
+extern crate protobuf;
 
 
 mod database;
 mod handlers;
 mod middleware;
+mod p_data;
 
 use iron::prelude::*;
 use iron::status;
@@ -27,7 +29,6 @@ use router::Router;
 fn handler(req: &mut Request) -> IronResult<Response> {
     info!("Some thing {:?}",req.extensions.len());
     info!("{:?} \n {:?}",req,req.headers);
-    //println!("{}",serde_json::to_string(&BTreeMap::<String,String>::new()).unwrap());
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
     Ok(Response::with((status::Ok, query)))
 }
@@ -45,6 +46,7 @@ fn main() {
     router.get("/hello/query/:query", handler);
     router.get("/hello/redis", handlers::hello::handler);
     router.get("/ping", handlers::api::user::test);
+    router.get("/protobuf", handlers::hello::pbuf);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
     chain.link_after(middleware::Custom404);

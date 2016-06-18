@@ -8,6 +8,7 @@ dependencies = [
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "log4rs 0.4.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres 0.11.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "protobuf 1.0.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "redis 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -426,6 +427,11 @@ dependencies = [
  "net2 0.2.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "protobuf"
+version = "1.0.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "quasi"

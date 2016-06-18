@@ -20,3 +20,6 @@ rust-crypto = "*"
 [dependencies.log4rs]
 version = "*"
 features = ["yaml"]
+
+[dependencies.protobuf]
+version = "*"

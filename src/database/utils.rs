@@ -4,8 +4,10 @@ use redis::{RedisResult, Connection as RedisConn};
 use redis;
 use redis::Commands;
 
-static URL:&'static str = "postgres://ipaomian:root@localhost:5432/smzdh";
-static REDIS:&'static str = "redis://127.0.0.1/";
+static URL:&'static str = "postgres://ipaomian:root@192.168.33.10:5432/smzdh";
+//static URL:&'static str = "postgres://ipaomian:root@localhost:5432/smzdh";
+static REDIS:&'static str = "redis://192.168.33.10/";
+//static REDIS:&'static str = "redis://127.0.0.1/";
 
 fn create_conn(url:&str) -> Result<Connection,postgres::error::ConnectError> {
     Connection::connect(url,SslMode::None)
