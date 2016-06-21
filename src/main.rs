@@ -5,6 +5,8 @@
 extern crate log;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate nom;
 
 extern crate log4rs;
 extern crate iron;
@@ -13,27 +15,27 @@ extern crate serde_json;
 extern crate postgres;
 extern crate redis;
 extern crate crypto;
-extern crate protobuf;
-
+extern crate serde;
+extern crate smzdm_commons;
 
 mod database;
 mod handlers;
 mod middleware;
-mod p_data;
 
 use iron::prelude::*;
 use iron::status;
 use router::Router;
-//use std::collections::BTreeMap;
+use std::collections::BTreeMap;
+use serde_json::value::Value;
+use smzdm_commons::headers;
 
 fn handler(req: &mut Request) -> IronResult<Response> {
-    info!("Some thing {:?}",req.extensions.len());
-    info!("{:?} \n {:?}",req,req.headers);
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
-    Ok(Response::with((status::Ok, query)))
+    let mut test = BTreeMap::<String,Value>::new();
+    test.insert(String::from("test"),Value::Bool(true));
+    Ok(Response::with((status::Ok,headers::json_headers(),serde_json::to_string(&test)
+                       .unwrap_or(String::from("{}")))))
 }
-
-
 
 fn main() {
     match log4rs::init_file("config/log4rs.yaml", Default::default()) {
@@ -46,7 +48,6 @@ fn main() {
     router.get("/hello/query/:query", handler);
     router.get("/hello/redis", handlers::hello::handler);
     router.get("/ping", handlers::api::user::test);
-    router.get("/protobuf", handlers::hello::pbuf);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
     chain.link_after(middleware::Custom404);

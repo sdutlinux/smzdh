@@ -21,5 +21,10 @@ rust-crypto = "*"
 version = "*"
 features = ["yaml"]
 
-[dependencies.protobuf]
+[dependencies.nom]
 version = "*"
+features = ["regexp","regexp_macros"]
+
+[dependencies.smzdm_commons]
+version = "*"
+path = "smzdm_commons"

@@ -1,0 +1,7 @@
+[package]
+name = "smzdm_commons"
+version = "0.1.0"
+authors = ["paomian <xpaomian@gmail.com>"]
+
+[dependencies]
+iron = "*"
