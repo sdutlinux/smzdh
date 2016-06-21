@@ -5,3 +5,6 @@ authors = ["paomian <xpaomian@gmail.com>"]
 
 [dependencies]
 iron = "*"
+serde = "*"
+serde_json = "*"
+serde_macros = "*"

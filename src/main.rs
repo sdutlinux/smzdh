@@ -31,10 +31,11 @@ use smzdm_commons::headers;
 
 fn handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
-    let mut test = BTreeMap::<String,Value>::new();
-    test.insert(String::from("test"),Value::Bool(true));
-    Ok(Response::with((status::Ok,headers::json_headers(),serde_json::to_string(&test)
-                       .unwrap_or(String::from("{}")))))
+    let mut test = headers::Json::new();
+    test.insert("hello","world");
+    test.insert("world","hhhhh");
+    test.insert("yxt",&vec![1,2,3,4]);
+    Ok(Response::with(headers::success_json_response(&test)))
 }
 
 fn main() {

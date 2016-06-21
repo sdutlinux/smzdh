@@ -1,4 +1,6 @@
 extern crate iron;
+extern crate serde_json;
+extern crate serde;
 
 pub mod headers;
 
