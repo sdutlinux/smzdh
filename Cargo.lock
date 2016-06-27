@@ -9,13 +9,13 @@ dependencies = [
  "log4rs 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "nom 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres 0.11.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rand 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "redis 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.7.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_macros 0.7.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "smzdm_commons 0.1.0",
+ "smzdh_commons 0.1.0",
  "websocket 0.17.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -624,10 +624,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "smzdm_commons"
+name = "smzdh_commons"
 version = "0.1.0"
 dependencies = [
  "iron 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rust-crypto 0.2.36 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.7.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_macros 0.7.11 (registry+https://github.com/rust-lang/crates.io-index)",

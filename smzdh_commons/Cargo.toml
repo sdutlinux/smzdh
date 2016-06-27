@@ -1,5 +1,5 @@
 [package]
-name = "smzdm_commons"
+name = "smzdh_commons"
 version = "0.1.0"
 authors = ["paomian <xpaomian@gmail.com>"]
 
@@ -8,3 +8,5 @@ iron = "*"
 serde = "*"
 serde_json = "*"
 serde_macros = "*"
+rust-crypto = "*"
+rustc-serialize = "*"

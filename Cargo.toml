@@ -15,7 +15,7 @@ log = "*"
 lazy_static = "*"
 iron = "*"
 redis = "*"
-rust-crypto = "*"
+rand = "*"
 
 [dependencies.log4rs]
 version = "*"
@@ -25,6 +25,6 @@ features = ["yaml"]
 version = "*"
 features = ["regexp","regexp_macros"]
 
-[dependencies.smzdm_commons]
+[dependencies.smzdh_commons]
 version = "*"
-path = "smzdm_commons"
+path = "smzdh_commons"

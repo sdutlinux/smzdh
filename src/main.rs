@@ -14,9 +14,9 @@ extern crate router;
 extern crate serde_json;
 extern crate postgres;
 extern crate redis;
-extern crate crypto;
 extern crate serde;
-extern crate smzdm_commons;
+extern crate smzdh_commons;
+extern crate rand;
 
 mod database;
 mod handlers;
@@ -32,10 +32,10 @@ fn main() {
     }
 
     let mut router = Router::new();
-    //router.get("/test", middleware::sql_test);
-    //router.get("/hello/query/:query", handler);
     router.get("/hello/redis", handlers::hello::handler);
     router.get("/ping", handlers::api::user::test);
+    router.get("/json", handlers::api::user::handler);
+    router.get("/ec", handlers::api::user::ec);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
     chain.link_after(middleware::Custom404);
