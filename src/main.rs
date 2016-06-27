@@ -23,20 +23,7 @@ mod handlers;
 mod middleware;
 
 use iron::prelude::*;
-use iron::status;
 use router::Router;
-use std::collections::BTreeMap;
-use serde_json::value::Value;
-use smzdm_commons::headers;
-
-fn handler(req: &mut Request) -> IronResult<Response> {
-    let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
-    let mut test = headers::Json::new();
-    test.insert("hello","world");
-    test.insert("world","hhhhh");
-    test.insert("yxt",&vec![1,2,3,4]);
-    Ok(Response::with(headers::success_json_response(&test)))
-}
 
 fn main() {
     match log4rs::init_file("config/log4rs.yaml", Default::default()) {
@@ -45,8 +32,8 @@ fn main() {
     }
 
     let mut router = Router::new();
-    router.get("/test", middleware::sql_test);
-    router.get("/hello/query/:query", handler);
+    //router.get("/test", middleware::sql_test);
+    //router.get("/hello/query/:query", handler);
     router.get("/hello/redis", handlers::hello::handler);
     router.get("/ping", handlers::api::user::test);
     let mut chain = Chain::new(router);
