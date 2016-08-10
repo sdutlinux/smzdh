@@ -1,10 +1,7 @@
 use iron::prelude::*;
 use iron::status;
 use router::Router;
-use std::collections::BTreeMap;
-use serde_json::value::Value;
 use smzdh_commons::headers;
-use middleware::Connect;
 use rand::{OsRng,Rng};
 use smzdh_commons::utils;
 
@@ -22,16 +19,8 @@ pub fn handler(req: &mut Request) -> IronResult<Response> {
     test.insert("world","hhhhh");
     test.insert("yxt",&vec![1,2,3,4]);
     test.insert("dajiahao",&inner.data);
+    test.insert("query",query);
     Ok(Response::with(headers::success_json_response(&test)))
-}
-
-pub fn sql_test(req: &mut Request) -> IronResult<Response> {
-    let result = req.extensions.get_mut::<Connect>().map(|r| {
-        r.get_conn().map(|c| {
-            c.query("SELECT * from pg_user;", &[]);
-        })
-    });
-    Ok(Response::with((status::Ok, format!("{:?}",result))))
 }
 
 pub fn ec(_: &mut Request) -> IronResult<Response> {
@@ -44,5 +33,6 @@ pub fn ec(_: &mut Request) -> IronResult<Response> {
     let e = utils::encrypt(me.as_bytes(),&key,&iv).ok().unwrap();
     info!("e:{:?},key:{:?},iv:{:?}",utils::hex(&e),utils::hex(&key),utils::hex(&iv));
     let test = headers::Json::new();
+    info!("hello");
     Ok(Response::with(headers::success_json_response(&test)))
 }

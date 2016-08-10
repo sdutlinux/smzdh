@@ -10,12 +10,11 @@ serde = "*"
 serde_json = "*"
 serde_macros = "*"
 websocket = "*"
-postgres = "*"
 log = "*"
 lazy_static = "*"
 iron = "*"
-redis = "*"
 rand = "*"
+redis = "*"
 
 [dependencies.log4rs]
 version = "*"

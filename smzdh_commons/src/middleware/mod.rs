@@ -7,7 +7,7 @@ use iron::headers::Cookie;
 use postgres::Connection;
 use router::NoRoute;
 use postgres::error as pe;
-use database;
+use super::databases;
 
 pub struct Connect;
 
@@ -20,7 +20,7 @@ impl PConnect {
         match self.conn {
             Some(ref mut c) => c.as_mut(),
             None => {
-                self.conn = Some(database::utils::conn());
+                self.conn = Some(databases::conn());
                 self.get_conn()
             },
         }
