@@ -1,6 +1,6 @@
-#+TITLE smzdh Todo
-#+AUTHOR paomian
-#+DATE <2016-08-05 Fri>
+#+TITLE: Smzdh Todo
+#+AUTHOR: paomian
+#+DATE: <2016-08-05 Fri>
 
 #+STARTUP: logdone
 #+STARTUP: lognotedone
