@@ -17,7 +17,7 @@ pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
 
 pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
     let result = req.extensions.get_mut::<Connect>().map(|r| {
-        r.get_conn().map(|c| {
+        r.get_postgres_conn().map(|c| {
             c.query("SELECT * from pg_user;", &[])
         })
     });

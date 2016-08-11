@@ -2,36 +2,55 @@ use iron::prelude::*;
 use iron::{BeforeMiddleware, AfterMiddleware, typemap};
 use iron::status;
 use iron::headers::Cookie;
-//use crypto::{ symmetriccipher, buffer, aes, blockmodes };
-//use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
 use postgres::Connection;
 use router::NoRoute;
+use redis::Connection as RedisConn;
+use redis;
 use postgres::error as pe;
 use super::databases;
-
-pub struct Connect;
+use super::scredis;
 
 pub struct PConnect {
-    conn: Option<Result<Connection,pe::ConnectError>>,
+    postgres_conn: Option<Result<Connection,pe::ConnectError>>,
+    redis_conn: Option<Result<RedisConn,redis::RedisError>>
 }
 
 impl PConnect {
-    pub fn get_conn(& mut self) -> Result<&mut Connection,&mut pe::ConnectError> {
-        match self.conn {
+    pub fn get_postgres_conn(& mut self) -> Result<&mut Connection,&mut pe::ConnectError> {
+        match self.postgres_conn {
             Some(ref mut c) => c.as_mut(),
             None => {
-                self.conn = Some(databases::conn());
-                self.get_conn()
+                self.postgres_conn = Some(databases::conn());
+                self.get_postgres_conn()
             },
         }
     }
+
+    pub fn get_redis_conn(&mut self) -> Result<&mut RedisConn, &mut redis::RedisError> {
+        match self.redis_conn {
+            Some(ref mut c) => c.as_mut(),
+            None => {
+                self.redis_conn = Some(scredis::redis_conn());
+                self.get_redis_conn()
+            }
+        }
+    }
+
+    fn new() -> Self {
+        PConnect {
+            postgres_conn:None,
+            redis_conn:None,
+        }
+    }
 }
+
+pub struct Connect;
 
 impl typemap::Key for Connect { type Value = PConnect ;}
 
 impl BeforeMiddleware for Connect {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        req.extensions.insert::<Connect>(PConnect{conn:None});
+        req.extensions.insert::<Connect>(PConnect::new());
         Ok(())
     }
 }
