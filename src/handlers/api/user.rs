@@ -10,7 +10,9 @@ pub fn test(_: &mut Request) -> IronResult<Response> {
 }
 
 pub fn handler(req: &mut Request) -> IronResult<Response> {
-    let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
+    let _ = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
+    let test = headers::JsonResponse::new_with(0,"",headers::JsonResponse::new());
+    /*
     let mut test = headers::Json::new();
     let mut inner = headers::Json::new();
     inner.insert("nihao","paomian");
@@ -20,6 +22,7 @@ pub fn handler(req: &mut Request) -> IronResult<Response> {
     test.insert("yxt",&vec![1,2,3,4]);
     test.insert("dajiahao",&inner.data);
     test.insert("query",query);
+     */
     Ok(Response::with(headers::success_json_response(&test)))
 }
 
@@ -32,7 +35,6 @@ pub fn ec(_: &mut Request) -> IronResult<Response> {
     rng.fill_bytes(&mut iv);
     let e = utils::encrypt(me.as_bytes(),&key,&iv).ok().unwrap();
     info!("e:{:?},key:{:?},iv:{:?}",utils::hex(&e),utils::hex(&key),utils::hex(&iv));
-    let test = headers::Json::new();
     info!("hello");
-    Ok(Response::with(headers::success_json_response(&test)))
+    Ok(Response::with(headers::success_json_response(&headers::JsonResponse::new())))
 }

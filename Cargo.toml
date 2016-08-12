@@ -6,15 +6,14 @@ authors = ["paomian <qtang@leancloud.rocks>"]
 [dependencies]
 hyper = "*"
 router = "*"
-serde = "*"
-serde_json = "*"
-serde_macros = "*"
+rustc-serialize= "*"
 websocket = "*"
 log = "*"
 lazy_static = "*"
 iron = "*"
 rand = "*"
 redis = "*"
+clippy = "*"
 
 [dependencies.log4rs]
 version = "*"
