@@ -1,11 +1,11 @@
 use iron::prelude::*;
-//use iron::middleware::Handler;
 use iron::status;
 use router::Router;
 use smzdh_commons::scredis;
 use smzdh_commons::middleware::Connect;
 use redis::Commands;
 use redis;
+use smzdh_commons::headers::{JsonResponse,success_json_response};
 
 pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
@@ -22,4 +22,10 @@ pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
         })
     });
     Ok(Response::with((status::Ok, format!("{:?}",result))))
+}
+
+pub fn test(_: &mut Request) -> IronResult<Response> {
+    let mut response = JsonResponse::new();
+    response.set_result("pong");
+    Ok(Response::with(success_json_response(&response)))
 }

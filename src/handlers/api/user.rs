@@ -1,28 +1,28 @@
 use iron::prelude::*;
-use iron::status;
 use router::Router;
-use smzdh_commons::headers;
 use rand::{OsRng,Rng};
+use smzdh_commons::headers;
 use smzdh_commons::utils;
 
-pub fn test(_: &mut Request) -> IronResult<Response> {
-    Ok(Response::with((status::Ok, "Pong")))
-}
+use std::io::Read;
 
 pub fn handler(req: &mut Request) -> IronResult<Response> {
     let _ = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
-    let test = headers::JsonResponse::new_with(0,"",headers::JsonResponse::new());
-    /*
-    let mut test = headers::Json::new();
-    let mut inner = headers::Json::new();
-    inner.insert("nihao","paomian");
-    inner.insert("wohao","paomian");
-    test.insert("hello","world");
-    test.insert("world","hhhhh");
-    test.insert("yxt",&vec![1,2,3,4]);
-    test.insert("dajiahao",&inner.data);
-    test.insert("query",query);
-     */
+    let mut inner = headers::JsonResponse::new();
+    inner.insert("username","paomian");
+    inner.insert("password","hello");
+    let test = headers::JsonResponse::new_with(0,"",&inner);
+    Ok(Response::with(headers::success_json_response(&test)))
+}
+
+pub fn signup(req:&mut Request) -> IronResult<Response> {
+    let mut body = String::new();
+    let _ = req.body.read_to_string(&mut body);
+    info!("url:{:?}::::{:?},headers:{:?},body:{}",req.url.query(),req.url.path(),req.headers,body);
+    let mut inner = headers::JsonResponse::new();
+    inner.insert("username","paomian");
+    inner.insert("password","hello");
+    let test = headers::JsonResponse::new_with(0,"",&inner);
     Ok(Response::with(headers::success_json_response(&test)))
 }
 

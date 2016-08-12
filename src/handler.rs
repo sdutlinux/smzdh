@@ -13,9 +13,10 @@ pub fn run() {
     let mut router = Router::new();
     router.get("/hello/redis", hello::redis_handler);
     router.get("/hello/postgres", hello::postgres_handler);
-    router.get("/ping", api::user::test);
+    router.get("/ping", hello::test);
     router.get("/json", api::user::handler);
     router.get("/ec", api::user::ec);
+    router.post("/signup", api::user::signup);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
     chain.link_after(middleware::Custom404);

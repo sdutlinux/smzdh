@@ -1,27 +1,35 @@
 use iron::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use iron::headers::ContentType;
 use iron::modifiers::Header;
-use std::collections::BTreeMap;
 use iron::status;
 use iron::status::Status;
-use std::convert::Into;
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
 use rustc_serialize::json::ToJson;
+
+use std::collections::BTreeMap;
+use std::convert::Into;
+use std::default::Default;
 
 #[derive(Debug)]
 pub struct JsonResponse {
     pub data:BTreeMap<String,Json>,
 }
 
-impl JsonResponse {
-    pub fn new() -> Self {
+impl Default for JsonResponse {
+    fn default() ->Self {
         JsonResponse {
             data:BTreeMap::new(),
         }
     }
+}
 
-    pub fn new_with<E:Into<String>,R:ToJson>(code:i64,error:E,result:R) -> Self {
+impl JsonResponse {
+    pub fn new() -> Self {
+        JsonResponse::default()
+    }
+
+    pub fn new_with<E:Into<String>,R:ToJson+?Sized>(code:i64,error:E,result:&R) -> Self {
         let mut tmp = JsonResponse {
             data:BTreeMap::new(),
         };
@@ -45,11 +53,11 @@ impl JsonResponse {
         self.data.insert(String::from("error"),e)
     }
 
-    pub fn set_result<R:ToJson>(&mut self,result:R) -> Option<Json> {
+    pub fn set_result<R:ToJson+?Sized>(&mut self,result:&R) -> Option<Json> {
         self.data.insert(String::from("result"),result.to_json())
     }
 
-    pub fn insert<K:Into<String>,V:ToJson>(&mut self,key:K,value:V) -> Option<Json> {
+    pub fn insert<K:Into<String>,V:ToJson+?Sized>(&mut self,key:K,value:&V) -> Option<Json> {
         self.data.insert(key.into(),value.to_json())
     }
 
@@ -79,6 +87,6 @@ pub fn success_json_response(jr:&JsonResponse) -> (Status,Header<ContentType>,St
         status::Ok,
         Header(ContentType(Mime(TopLevel::Application, SubLevel::Json,
                                 vec![(Attr::Charset, Value::Utf8)]))),
-        json::encode(&jr.data).unwrap_or(String::new()),
+        json::encode(&jr.data).unwrap_or_else(|_| {String::new()}),
     )
 }
