@@ -6,6 +6,7 @@ use smzdh_commons::middleware::Connect;
 use redis::Commands;
 use redis;
 use smzdh_commons::headers::{JsonResponse,success_json_response};
+use smzdh_commons::errors::SmzdhError;
 
 pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
@@ -28,4 +29,9 @@ pub fn test(_: &mut Request) -> IronResult<Response> {
     let mut response = JsonResponse::new();
     response.set_result("pong");
     Ok(Response::with(success_json_response(&response)))
+}
+
+pub fn error_test(_:&mut Request) -> IronResult<Response> {
+    let error = SmzdhError::Test;
+    Err(error.into_iron_error())
 }

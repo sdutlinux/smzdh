@@ -17,6 +17,7 @@ pub fn run() {
     router.get("/json", api::user::handler);
     router.get("/ec", api::user::ec);
     router.post("/signup", api::user::signup);
+    router.get("/error",hello::error_test);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Connect);
     chain.link_after(middleware::Custom404);
