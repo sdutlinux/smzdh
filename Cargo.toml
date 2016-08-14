@@ -14,10 +14,7 @@ iron = "*"
 rand = "*"
 redis = "*"
 clippy = "*"
-
-[dependencies.log4rs]
-version = "*"
-features = ["yaml"]
+env_logger = "*"
 
 [dependencies.nom]
 version = "*"

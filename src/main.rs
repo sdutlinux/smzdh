@@ -7,18 +7,19 @@ extern crate log;
 extern crate lazy_static;
 #[macro_use]
 extern crate nom;
+#[macro_use]
+extern crate smzdh_commons;
 
-extern crate log4rs;
+extern crate env_logger;
 extern crate iron;
 extern crate router;
 extern crate rustc_serialize;
-extern crate smzdh_commons;
+
 extern crate rand;
 extern crate redis;
 
 mod handlers;
 mod handler;
-
 
 fn main() {
     handler::run();

@@ -39,7 +39,6 @@ impl JsonResponse {
         tmp
     }
 
-
     pub fn set_code(&mut self,code:i64) -> Option<Json> {
         self.data.insert(String::from("code"),Json::I64(code))
     }
@@ -68,6 +67,10 @@ impl JsonResponse {
     pub fn clone_from_brmap(&mut self,othre:BTreeMap<String,Json>) {
         self.data = othre;
     }
+
+    pub fn to_json_string(&self) -> String {
+        json::encode(&self.data).unwrap_or_else(|_| {String::new()})
+    }
 }
 
 impl ToJson for JsonResponse {
@@ -81,12 +84,10 @@ pub fn json_headers() -> Header<ContentType> {
                             vec![(Attr::Charset, Value::Utf8)])))
 }
 
-
 pub fn success_json_response(jr:&JsonResponse) -> (Status,Header<ContentType>,String) {
     (
         status::Ok,
-        Header(ContentType(Mime(TopLevel::Application, SubLevel::Json,
-                                vec![(Attr::Charset, Value::Utf8)]))),
+        json_headers(),
         json::encode(&jr.data).unwrap_or_else(|_| {String::new()}),
     )
 }

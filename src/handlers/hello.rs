@@ -32,6 +32,7 @@ pub fn test(_: &mut Request) -> IronResult<Response> {
 }
 
 pub fn error_test(_:&mut Request) -> IronResult<Response> {
-    let error = SmzdhError::Test;
-    Err(error.into_iron_error())
+    let a:Result<i32,i32> = Err(0);
+    let _ = stry!(a,SmzdhError::Test);
+    Ok(Response::with((status::Ok, "hello")))
 }

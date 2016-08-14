@@ -1,12 +1,12 @@
 use handlers::{hello,api};
 use iron::prelude::*;
 use router::Router;
-use log4rs;
+use env_logger;
 use smzdh_commons::middleware;
 
 pub fn run() {
-    match log4rs::init_file("config/log4rs.yaml", Default::default()) {
-        Ok(_) => info!("Log4rs start success"),
+    match env_logger::init() {
+        Ok(_) => info!("Log start success"),
         Err(e) => println!("{:?}",e),
     }
 
