@@ -1,15 +1,35 @@
 use handlers::{hello,api};
 use iron::prelude::*;
 use router::Router;
-use env_logger;
+use log::{LogRecord, LogLevelFilter};
+use env_logger::LogBuilder;
 use smzdh_commons::middleware;
+use chrono::offset::local::Local;
 
-pub fn run() {
-    match env_logger::init() {
-        Ok(_) => info!("Log start success"),
-        Err(e) => println!("{:?}",e),
+use std::env;
+
+
+
+fn init_log() {
+    let format = |record: &LogRecord| {
+        format!("[{}] [{}] [{}] - {}", record.level(),
+                Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                record.location().module_path(),
+                record.args())
+    };
+
+    let mut builder = LogBuilder::new();
+    builder.format(format).filter(None, LogLevelFilter::Info);
+
+    if env::var("RUST_LOG").is_ok() {
+        builder.parse(&env::var("RUST_LOG").unwrap());
     }
 
+    let _ = builder.init();
+}
+
+pub fn run() {
+    init_log();
     let mut router = Router::new();
     router.get("/hello/redis", hello::redis_handler);
     router.get("/hello/postgres", hello::postgres_handler);

@@ -3,6 +3,7 @@ use iron::headers::ContentType;
 use iron::modifiers::Header;
 use iron::status;
 use iron::status::Status;
+use iron::prelude::*;
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
 use rustc_serialize::json::ToJson;
@@ -84,10 +85,10 @@ pub fn json_headers() -> Header<ContentType> {
                             vec![(Attr::Charset, Value::Utf8)])))
 }
 
-pub fn success_json_response(jr:&JsonResponse) -> (Status,Header<ContentType>,String) {
-    (
+pub fn success_json_response(jr:&JsonResponse) -> IronResult<Response> {
+    Ok(Response::with((
         status::Ok,
         json_headers(),
         json::encode(&jr.data).unwrap_or_else(|_| {String::new()}),
-    )
+    )))
 }

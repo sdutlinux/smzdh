@@ -12,7 +12,7 @@ pub fn handler(req: &mut Request) -> IronResult<Response> {
     inner.insert("username","paomian");
     inner.insert("password","hello");
     let test = headers::JsonResponse::new_with(0,"",&inner);
-    Ok(Response::with(headers::success_json_response(&test)))
+    headers::success_json_response(&test)
 }
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
@@ -23,7 +23,7 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     inner.insert("username","paomian");
     inner.insert("password","hello");
     let test = headers::JsonResponse::new_with(0,"",&inner);
-    Ok(Response::with(headers::success_json_response(&test)))
+    headers::success_json_response(&test)
 }
 
 pub fn ec(_: &mut Request) -> IronResult<Response> {
@@ -36,5 +36,5 @@ pub fn ec(_: &mut Request) -> IronResult<Response> {
     let e = utils::encrypt(me.as_bytes(),&key,&iv).ok().unwrap();
     info!("e:{:?},key:{:?},iv:{:?}",utils::hex(&e),utils::hex(&key),utils::hex(&iv));
     info!("hello");
-    Ok(Response::with(headers::success_json_response(&headers::JsonResponse::new())))
+    headers::success_json_response(&headers::JsonResponse::new())
 }

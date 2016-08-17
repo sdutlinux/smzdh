@@ -17,22 +17,27 @@ pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
-    let result = req.extensions.get_mut::<Connect>().map(|r| {
-        r.get_postgres_conn().map(|c| {
-            c.query("SELECT * from pg_user;", &[])
-        })
-    });
-    Ok(Response::with((status::Ok, format!("{:?}",result))))
+    let connect = sexpect!(req.extensions.get_mut::<Connect>());
+    let postgres_c = stry!(connect.get_postgres_conn());
+    let result = stry!(postgres_c.query("SELECT * from users;", &[]));
+    let mut response = JsonResponse::new();
+    let mut vec = Vec::<i32>::new();
+    for row in &result {
+        vec.push(row.get("id"));
+    }
+    response.set_result(&vec);
+    success_json_response(&response)
 }
 
 pub fn test(_: &mut Request) -> IronResult<Response> {
     let mut response = JsonResponse::new();
     response.set_result("pong");
-    Ok(Response::with(success_json_response(&response)))
+    success_json_response(&response)
 }
 
 pub fn error_test(_:&mut Request) -> IronResult<Response> {
     let a:Result<i32,i32> = Err(0);
-    let _ = stry!(a,SmzdhError::Test);
+    let string = String::from("A 的值应该为一个数组。");
+    let _ = stry!(a,SmzdhError::Test.into_iron_error(Some(&*string)));
     Ok(Response::with((status::Ok, "hello")))
 }

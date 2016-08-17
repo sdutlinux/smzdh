@@ -15,6 +15,7 @@ rand = "*"
 redis = "*"
 clippy = "*"
 env_logger = "*"
+chrono = "*"
 
 [dependencies.nom]
 version = "*"
