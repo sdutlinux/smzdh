@@ -53,3 +53,29 @@ pub fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, 
 pub fn hex(data:&[u8]) -> String {
     data.to_hex()
 }
+/*
+#[macro_export]
+macro_rules! jget {
+    ($json:expr,$key:expr,$convert:expr) => (
+        $json.get($key).and_then(|tmp| {
+            match $convert {
+                "string" => tmp.as_string(),
+                "i64" => tmp.as_i64(),
+                "u64" => tmp.as_u64(),
+                "f64" => tmp.as_f64(),
+                "bool" => tmp.as_boolean(),
+            }
+        }),$crate::error::SmzdhError::ParamsError.to_response()
+    )
+}
+*/
+
+
+#[macro_export]
+macro_rules! jget {
+    ($json:expr,$key:expr,$convert:ident) => (
+        $json.get($key).and_then(|tmp| {
+            tmp.$convert()
+        })
+    )
+}

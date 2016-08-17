@@ -38,6 +38,6 @@ pub fn test(_: &mut Request) -> IronResult<Response> {
 pub fn error_test(_:&mut Request) -> IronResult<Response> {
     let a:Result<i32,i32> = Err(0);
     let string = String::from("A 的值应该为一个数组。");
-    let _ = stry!(a,SmzdhError::Test.into_iron_error(Some(&*string)));
+    let _ = stry!(a,SmzdhError::Test.into_iron_error(Some(string)));
     Ok(Response::with((status::Ok, "hello")))
 }

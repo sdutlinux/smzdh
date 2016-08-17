@@ -35,14 +35,14 @@ impl Error for SmzdhError {
 }
 
 impl SmzdhError {
-    pub fn to_response(&self,desc:Option<&str>) -> (Status, Header<ContentType>, String) {
+    pub fn to_response(&self,desc:Option<String>) -> (Status, Header<ContentType>, String) {
         let status = match *self {
             SmzdhError::InternalServerError => status::InternalServerError,
             SmzdhError::Test | _ => status::BadRequest,
         };
         let mut response = headers::JsonResponse::new();
         match desc {
-            Some(s) => response.set_error(format!("{}:{}",self.description(),s)),
+            Some(s) => response.set_error(format!("{}:{}",self.description(),&*s)),
             None => response.set_error(self.description()),
         };
         (
@@ -51,7 +51,7 @@ impl SmzdhError {
         )
     }
 
-    pub fn into_iron_error(self,desc:Option<&str>) -> IronError {
+    pub fn into_iron_error(self,desc:Option<String>) -> IronError {
         let response = self.to_response(desc);
         IronError::new(self,response)
     }
@@ -76,7 +76,7 @@ macro_rules! stry {
 /// modifier. The default modifier is `status::BadRequest`.
 #[macro_export]
 macro_rules! sexpect {
-    ($option:expr) => (sexpect!($option, $crate::errors::SmzdhError::InternalServerError.to_response(None)));
+    ($option:expr) => (sexpect!($option, $crate::errors::SmzdhError::ParamsError.to_response(None)));
     ($option:expr, $modifier:expr) => (match $option {
         ::std::option::Option::Some(x) => x,
         ::std::option::Option::None =>

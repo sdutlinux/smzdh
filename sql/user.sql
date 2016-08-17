@@ -3,5 +3,5 @@ CREATE TABLE users (
     username VARCHAR(32) NOT NULL,
     passworld VARCHAR(128) NOT NULL,
     salt VARCHAR(128) NOT NULL,
-    created TIMESTAMP DEFAULT now()
+    created TIMESTAMP with time zone DEFAULT now()
 );

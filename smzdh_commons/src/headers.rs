@@ -2,7 +2,6 @@ use iron::mime::{Mime, TopLevel, SubLevel, Attr, Value};
 use iron::headers::ContentType;
 use iron::modifiers::Header;
 use iron::status;
-use iron::status::Status;
 use iron::prelude::*;
 use rustc_serialize::json;
 use rustc_serialize::json::Json;

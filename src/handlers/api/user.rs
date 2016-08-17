@@ -3,6 +3,9 @@ use router::Router;
 use rand::{OsRng,Rng};
 use smzdh_commons::headers;
 use smzdh_commons::utils;
+use smzdh_commons::errors::SmzdhError;
+use rustc_serialize::json::Json;
+
 
 use std::io::Read;
 
@@ -18,10 +21,20 @@ pub fn handler(req: &mut Request) -> IronResult<Response> {
 pub fn signup(req:&mut Request) -> IronResult<Response> {
     let mut body = String::new();
     let _ = req.body.read_to_string(&mut body);
-    info!("url:{:?}::::{:?},headers:{:?},body:{}",req.url.query(),req.url.path(),req.headers,body);
+    let json = stry!(Json::from_str(&*body),
+                     SmzdhError::ParamsError.into_iron_error(
+                         Some("body 必须是Json.".to_string())
+                     ));
+    let object = sexpect!(json.as_object(),
+                          SmzdhError::ParamsError.to_response(None));
+    let username = sexpect!(jget!(object,"username",as_string),
+                            SmzdhError::ParamsError.to_response(None));
+    let password = sexpect!(jget!(object,"password",as_string),
+                            SmzdhError::ParamsError.to_response(None));
+
     let mut inner = headers::JsonResponse::new();
-    inner.insert("username","paomian");
-    inner.insert("password","hello");
+    inner.insert("username",username);
+    inner.insert("passowrd",password);
     let test = headers::JsonResponse::new_with(0,"",&inner);
     headers::success_json_response(&test)
 }
