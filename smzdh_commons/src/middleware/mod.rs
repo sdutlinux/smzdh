@@ -1,21 +1,29 @@
 use iron::prelude::*;
 use iron::{BeforeMiddleware, AfterMiddleware, typemap};
 use iron::status;
-use iron::headers::Cookie;
+use iron::headers::{Cookie,ContentType};
+use iron::method::Method;
 use postgres::Connection;
 use router::NoRoute;
 use redis::Connection as RedisConn;
 use redis;
 use postgres::error as pe;
+use rustc_serialize::json::Json as RJson;
+use iron::mime::{Mime, TopLevel, SubLevel};
+
+use std::io::Read;
+
 use super::databases;
 use super::scredis;
 
-pub struct PConnect {
+pub struct DConnect {
     postgres_conn: Option<Result<Connection,pe::ConnectError>>,
     redis_conn: Option<Result<RedisConn,redis::RedisError>>
 }
 
-impl PConnect {
+pub struct DConnectm;
+
+impl DConnect {
     pub fn get_postgres_conn(& mut self) -> Result<&mut Connection,&mut pe::ConnectError> {
         match self.postgres_conn {
             Some(ref mut c) => c.as_mut(),
@@ -37,36 +45,70 @@ impl PConnect {
     }
 
     fn new() -> Self {
-        PConnect {
+        DConnect {
             postgres_conn:None,
             redis_conn:None,
         }
     }
 }
 
-pub struct Connect;
+impl typemap::Key for DConnectm { type Value = DConnect ;}
 
-impl typemap::Key for Connect { type Value = PConnect ;}
-
-impl BeforeMiddleware for Connect {
+impl BeforeMiddleware for DConnectm {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        req.extensions.insert::<Connect>(PConnect::new());
+        req.extensions.insert::<DConnectm>(DConnect::new());
         Ok(())
     }
 }
 
-struct Cid;
-
-impl typemap::Key for Cid { type Value = i64; }
-
 pub struct Cookies;
+
+impl typemap::Key for Cookies { type Value = i64; }
 
 impl BeforeMiddleware for Cookies {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        let cookies = req.headers.get_mut::<Cookie>();
+        let cookies = req.headers.get::<Cookie>();
         info!("Cookies is {:?}",cookies);
-        req.extensions.insert::<Cid>(10);
+        req.extensions.insert::<Cookies>(10);
         Ok(())
+    }
+}
+
+pub struct Json;
+
+impl typemap::Key for Json { type Value = RJson ;}
+
+impl BeforeMiddleware for Json {
+    fn before(&self,req:&mut Request) -> IronResult<()> {
+        match req.method {
+            Method::Post | Method::Put => {
+                let content_type = match req.headers.get::<ContentType>() {
+                    Some(ct) => ct,
+                    None => {return Ok(());},
+                };
+                let json = match *content_type {
+                    ContentType(Mime(TopLevel::Application, SubLevel::Json, _)) => {
+                        let mut body = String::new();
+                        let _ = req.body.read_to_string(&mut body);
+                        match RJson::from_str(&*body) {
+                            Ok(j) => j,
+                            Err(e) => {
+                                info!("Parse json error raw:{},error:{:?}",body,e);
+                                return Err(
+                                    super::errors::SmzdhError::ParamsError.into_iron_error(
+                                        Some(String::from("Json 格式错误"))
+                                    )
+                                );
+                            }
+                        }
+                    },
+                    _ =>  {return Ok(())},
+                };
+                req.extensions.insert::<Json>(json);
+                Ok(())
+            },
+            _ => Ok(())
+        }
     }
 }
 

@@ -2,7 +2,6 @@ use iron::prelude::*;
 use iron::status;
 use router::Router;
 use smzdh_commons::scredis;
-use smzdh_commons::middleware::Connect;
 use redis::Commands;
 use redis;
 use smzdh_commons::headers::{JsonResponse,success_json_response};
@@ -17,8 +16,7 @@ pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
-    let connect = sexpect!(req.extensions.get_mut::<Connect>());
-    let postgres_c = stry!(connect.get_postgres_conn());
+    let postgres_c = pconn!(req);
     let result = stry!(postgres_c.query("SELECT * from users;", &[]));
     let mut response = JsonResponse::new();
     let mut vec = Vec::<i32>::new();

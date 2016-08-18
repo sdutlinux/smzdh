@@ -56,30 +56,3 @@ impl SmzdhError {
         IronError::new(self,response)
     }
 }
-
-
-#[macro_export]
-macro_rules! stry {
-    ($result:expr) => (stry!($result, $crate::errors::SmzdhError::InternalServerError.into_iron_error(None)));
-
-    ($result:expr, $modifier:expr) => (match $result {
-        ::std::result::Result::Ok(val) => val,
-        ::std::result::Result::Err(err) => {
-            info!("Error case{:?}",err);
-            return ::std::result::Result::Err(
-                $modifier);
-        }
-    })
-}
-
-/// Unwrap the given `Option` or return a `Ok(Response::new())` with the given
-/// modifier. The default modifier is `status::BadRequest`.
-#[macro_export]
-macro_rules! sexpect {
-    ($option:expr) => (sexpect!($option, $crate::errors::SmzdhError::ParamsError.to_response(None)));
-    ($option:expr, $modifier:expr) => (match $option {
-        ::std::option::Option::Some(x) => x,
-        ::std::option::Option::None =>
-            return ::std::result::Result::Ok(::iron::response::Response::with($modifier)),
-    })
-}
