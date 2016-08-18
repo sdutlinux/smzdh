@@ -9,6 +9,7 @@ extern crate log;
 extern crate postgres;
 extern crate redis;
 extern crate router;
+extern crate rand;
 
 pub mod headers;
 pub mod utils;

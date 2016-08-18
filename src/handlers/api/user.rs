@@ -1,6 +1,6 @@
 use iron::prelude::*;
 use router::Router;
-use rand::{OsRng,Rng};
+
 use smzdh_commons::headers;
 use smzdh_commons::utils;
 use smzdh_commons::errors::SmzdhError;
@@ -28,20 +28,12 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     let password = jget!(object,"password",as_string);
     let postgres_c = pconn!(req);
     let result = stry!(databases::create_user(postgres_c,username,password));
-    let mut inner = headers::JsonResponse::new();
-    let test = headers::JsonResponse::new_with(0,"",&inner);
-    headers::success_json_response(&test)
+    headers::success_json_response(&headers::JsonResponse::new())
 }
 
 pub fn ec(_: &mut Request) -> IronResult<Response> {
     let me = "paomian";
-    let mut rng = OsRng::new().ok().unwrap();
-    let mut key: [u8; 16] = [0; 16];
-    let mut iv: [u8; 16] = [0; 16];
-    rng.fill_bytes(&mut key);
-    rng.fill_bytes(&mut iv);
-    let e = utils::encrypt(me.as_bytes(),&key,&iv).ok().unwrap();
-    info!("e:{:?},key:{:?},iv:{:?}",utils::hex(&e),utils::hex(&key),utils::hex(&iv));
-    info!("hello");
+    let (a,b) = utils::encrypt(me);
+    info!("e:{},salt:{},check:{}",a,b,utils::check_pass(me,&*a,&*b));
     headers::success_json_response(&headers::JsonResponse::new())
 }

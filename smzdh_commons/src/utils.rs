@@ -1,75 +1,29 @@
-use crypto::{ symmetriccipher, buffer, aes, blockmodes };
-use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
+use crypto::digest::Digest;
+use crypto::sha2::Sha512;
 use rustc_serialize::hex::ToHex;
+use rand::{ Rng, OsRng };
 
-pub fn encrypt(data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
-
-    let mut encryptor = aes::cbc_encryptor(
-        aes::KeySize::KeySize256,
-        key,
-        iv,
-        blockmodes::PkcsPadding);
-
-    let mut final_result = Vec::<u8>::new();
-    let mut read_buffer = buffer::RefReadBuffer::new(data);
-    let mut buffer = [0; 4096];
-    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
-
-    loop {
-        let result = try!(encryptor.encrypt(&mut read_buffer, &mut write_buffer, true));
-        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().cloned());
-        match result {
-            BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => { }
-        }
-    }
-    Ok(final_result)
-}
-
-pub fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
-    let mut decryptor = aes::cbc_decryptor(
-        aes::KeySize::KeySize256,
-        key,
-        iv,
-        blockmodes::PkcsPadding);
-
-    let mut final_result = Vec::<u8>::new();
-    let mut read_buffer = buffer::RefReadBuffer::new(encrypted_data);
-    let mut buffer = [0; 4096];
-    let mut write_buffer = buffer::RefWriteBuffer::new(&mut buffer);
-
-    loop {
-        let result = try!(decryptor.decrypt(&mut read_buffer, &mut write_buffer, true));
-        final_result.extend(write_buffer.take_read_buffer().take_remaining().iter().cloned());
-        match result {
-            BufferResult::BufferUnderflow => break,
-            BufferResult::BufferOverflow => { }
-        }
-    }
-
-    Ok(final_result)
+pub fn encrypt(pass:&str) -> (String,String) {
+    let mut rng = OsRng::new().ok().unwrap();
+    let mut salt = [0;32];
+    rng.fill_bytes(&mut salt);
+    let mut hasher = Sha512::new();
+    let hex_salt = hex(&salt);
+    let e = [&*hex_salt,pass].concat();
+    hasher.input_str(&*e);
+    let ep = hasher.result_str();
+    (ep,hex_salt)
 }
 
 pub fn hex(data:&[u8]) -> String {
     data.to_hex()
 }
-/*
-#[macro_export]
-macro_rules! jget {
-    ($json:expr,$key:expr,$convert:expr) => (
-        $json.get($key).and_then(|tmp| {
-            match $convert {
-                "string" => tmp.as_string(),
-                "i64" => tmp.as_i64(),
-                "u64" => tmp.as_u64(),
-                "f64" => tmp.as_f64(),
-                "bool" => tmp.as_boolean(),
-            }
-        }),$crate::error::SmzdhError::ParamsError.to_response()
-    )
-}
-*/
 
+pub fn check_pass(p:&str,ep:&str,salt:&str) -> bool {
+    let mut hasher = Sha512::new();
+    hasher.input_str(&*[salt,p].concat());
+    &hasher.result_str() == ep
+}
 
 #[macro_export]
 macro_rules! jget {
