@@ -31,6 +31,17 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
+pub fn signin(req:&mut Request) -> IronResult<Response> {
+    let json = sexpect!(req.extensions.get::<Json>(),
+                        SmzdhError::ParamsError.to_response(
+                            Some("body 必须是Json.".to_string())
+                        )).clone();
+    let object = sexpect!(json.as_object(),
+                          SmzdhError::ParamsError.to_response(None));
+    let username = jget!(object,"username",as_string);
+    let password = jget!(object,"password",as_string);
+}
+
 pub fn ec(_: &mut Request) -> IronResult<Response> {
     let me = "paomian";
     let (a,b) = utils::encrypt(me);
