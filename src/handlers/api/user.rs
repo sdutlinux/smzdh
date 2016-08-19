@@ -1,4 +1,5 @@
 use iron::prelude::*;
+iron::headers::{SetCookie,CookiePair};
 use router::Router;
 
 use smzdh_commons::headers;
@@ -44,7 +45,14 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     let user =  sexpect!(stry!(databases::find_user(postgres_c,username)));
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",username);
-        headers::success_json_response(&headers::JsonResponse::new())
+        headers::success_json_response(&headers::JsonResponse::new()).map(|resp| {
+            resp.headers.set(
+                SetCookie(vec![
+                    CookiePair::new("smzdh_user".to_string(), format!("{}",user.id))
+                ])
+            );
+            resp
+        })
     } else {
         Ok(Response::with(SmzdhError::Test.to_response(Some("登陆失败".to_string()))))
     }
