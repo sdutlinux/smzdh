@@ -9,7 +9,6 @@ use smzdh_commons::databases;
 
 pub fn handler(req: &mut Request) -> IronResult<Response> {
     let _ = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
-    let postgres_c = pconn!(req);
     let mut inner = headers::JsonResponse::new();
     inner.insert("username","paomian");
     inner.insert("password","hello");
@@ -20,26 +19,35 @@ pub fn handler(req: &mut Request) -> IronResult<Response> {
 pub fn signup(req:&mut Request) -> IronResult<Response> {
     let json = sexpect!(req.extensions.get::<Json>(),
                         SmzdhError::ParamsError.to_response(
-                            Some("body 必须是Json.".to_string())
+                            Some("body必须是Json格式。".to_string())
                         )).clone();
     let object = sexpect!(json.as_object(),
-                          SmzdhError::ParamsError.to_response(None));
+                          SmzdhError::ParamsError.to_response(
+                              Some("Json 格式错误。".to_string())));
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
     let postgres_c = pconn!(req);
-    let result = stry!(databases::create_user(postgres_c,username,password));
+    stry!(databases::create_user(postgres_c,username,password));
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
 pub fn signin(req:&mut Request) -> IronResult<Response> {
     let json = sexpect!(req.extensions.get::<Json>(),
                         SmzdhError::ParamsError.to_response(
-                            Some("body 必须是Json.".to_string())
+                            Some("body 必须是 Json.".to_string())
                         )).clone();
     let object = sexpect!(json.as_object(),
                           SmzdhError::ParamsError.to_response(None));
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
+    let postgres_c = pconn!(req);
+    let user =  sexpect!(stry!(databases::find_user(postgres_c,username)));
+    if utils::check_pass(password,&*user.password,&*user.salt) {
+        info!("user:{} login success",username);
+        headers::success_json_response(&headers::JsonResponse::new())
+    } else {
+        Ok(Response::with(SmzdhError::Test.to_response(Some("登陆失败".to_string()))))
+    }
 }
 
 pub fn ec(_: &mut Request) -> IronResult<Response> {

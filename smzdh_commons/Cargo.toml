@@ -7,9 +7,13 @@ authors = ["paomian <xpaomian@gmail.com>"]
 iron = "*"
 rust-crypto = "*"
 rustc-serialize = "*"
-postgres = "*"
 redis = "*"
 log = "*"
 rand = "*"
 router = "*"
 clippy = "*"
+chrono = "*"
+
+[dependencies.postgres]
+version = "*"
+features = ["rustc-serialize","chrono"]
