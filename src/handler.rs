@@ -34,10 +34,15 @@ pub fn run() {
     router.get("/hello/redis", hello::redis_handler);
     router.get("/hello/postgres", hello::postgres_handler);
     router.get("/ping", hello::test);
-    router.get("/json", api::user::handler);
-    router.get("/ec", api::user::ec);
+    router.get("/ec", api::user::signintest);
+
     router.post("/signup", api::user::signup);
     router.post("/signin", api::user::signin);
+    router.get("/logout", api::user::logout);
+
+    router.get("/post",hello::test);
+    router.post("/post",hello::test);
+
     router.get("/error",hello::error_test);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Cookies);

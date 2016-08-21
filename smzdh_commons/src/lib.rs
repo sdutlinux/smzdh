@@ -26,35 +26,67 @@ macro_rules! jget {
     ($json:expr,$key:expr,$convert:ident) => (
         sexpect!($json.get($key).and_then(|tmp| {
             tmp.$convert()
-        }),$crate::errors::SmzdhError::ParamsError.to_response(
-            Some(format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]))))
+        }),
+                 $crate::errors::SError::ParamsError,
+                 &*format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]))
     )
 }
 
 #[macro_export]
 macro_rules! stry {
-    ($result:expr) => (stry!($result, $crate::errors::SmzdhError::InternalServerError.into_iron_error(None)));
+    ($result:expr) => (stry!($result, $crate::errors::SError::InternalServerError));
 
     ($result:expr, $modifier:expr) => (match $result {
         ::std::result::Result::Ok(val) => val,
         ::std::result::Result::Err(err) => {
             info!("Error case{:?}",err);
             return ::std::result::Result::Err(
-                $modifier);
+                $modifier.into_iron_error(None));
         }
-    })
+    });
+    ($result:expr,$modifier:expr,$desc:expr) => (match $result {
+        ::std::result::Result::Ok(x) => x,
+        ::std::result::Result::Err(err) => {
+            info!("Error case{:?}",err);
+            return ::std::result::Result::Err(
+                $modifier.into_iron_error(
+                    ::std::option::Option::Some(
+                        ::std::string::String::from($desc)
+                    )
+                )
+            )
+        }
+    }
+    )
 }
 
 #[macro_export]
 macro_rules! sexpect {
-    ($option:expr) => (sexpect!($option, $crate::errors::SmzdhError::ParamsError.to_response(None)));
+    ($option:expr) => (sexpect!($option, $crate::errors::SError::ParamsError));
     ($option:expr, $modifier:expr) => (match $option {
         ::std::option::Option::Some(x) => x,
         ::std::option::Option::None => {
-            info!("expect");
-            return ::std::result::Result::Ok(::iron::response::Response::with($modifier));
+            return ::std::result::Result::Ok(
+                ::iron::response::Response::with(
+                    $modifier.to_response(None)
+                ));
         },
-    })
+    });
+    ($option:expr,$modifier:expr,$desc:expr) => (match $option {
+        ::std::option::Option::Some(x) => x,
+        ::std::option::Option::None => {
+            return ::std::result::Result::Ok(
+                ::iron::response::Response::with(
+                    $modifier.to_response(
+                        ::std::option::Option::Some(
+                            ::std::string::String::from($desc)
+                        )
+                    )
+                )
+            )
+        }
+    }
+    )
 }
 
 #[macro_export]

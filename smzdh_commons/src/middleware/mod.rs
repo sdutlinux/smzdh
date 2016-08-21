@@ -82,7 +82,7 @@ impl BeforeMiddleware for Cookies {
                 Ok(x) => x,
                 Err(e) => {
                     info!("Parse cookie smzdh_user error:{:?}",e);
-                    return Err(super::errors::SmzdhError::ParamsError.into_iron_error(
+                    return Err(super::errors::SError::ParamsError.into_iron_error(
                         Some(String::from("Cookies 无效"))))
                 }
             };
@@ -114,7 +114,7 @@ impl BeforeMiddleware for Json {
                             Err(e) => {
                                 info!("Parse json error raw:{},error:{:?}",body,e);
                                 return Err(
-                                    super::errors::SmzdhError::ParamsError.into_iron_error(
+                                    super::errors::SError::ParamsError.into_iron_error(
                                         Some(String::from("Json 格式错误"))
                                     )
                                 );

@@ -5,8 +5,7 @@ use smzdh_commons::scredis;
 use redis::Commands;
 use redis;
 use smzdh_commons::headers::{JsonResponse,success_json_response};
-use smzdh_commons::errors::SmzdhError;
-use smzdh_commons::middleware::Cookies;
+use smzdh_commons::errors::SError;
 
 pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
@@ -28,9 +27,7 @@ pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
     success_json_response(&response)
 }
 
-pub fn test(req: &mut Request) -> IronResult<Response> {
-    let uid = req.extensions.get::<Cookies>();
-    info!("uid:{:?}",uid);
+pub fn test(_: &mut Request) -> IronResult<Response> {
     let mut response = JsonResponse::new();
     response.set_result("pong");
     success_json_response(&response)
@@ -38,7 +35,6 @@ pub fn test(req: &mut Request) -> IronResult<Response> {
 
 pub fn error_test(_:&mut Request) -> IronResult<Response> {
     let a:Result<i32,i32> = Err(0);
-    let string = String::from("A 的值应该为一个数组。");
-    let _ = stry!(a,SmzdhError::Test.into_iron_error(Some(string)));
+    let _ = stry!(a,SError::Test,"A 的值应该为一个数组。");
     Ok(Response::with((status::Ok, "hello")))
 }
