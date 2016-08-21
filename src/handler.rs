@@ -40,6 +40,7 @@ pub fn run() {
     router.post("/signin", api::user::signin);
     router.get("/error",hello::error_test);
     let mut chain = Chain::new(router);
+    chain.link_before(middleware::Cookies);
     chain.link_before(middleware::Json);
     chain.link_before(middleware::DConnectm);
     chain.link_after(middleware::Custom404);

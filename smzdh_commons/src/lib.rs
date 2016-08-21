@@ -50,8 +50,10 @@ macro_rules! sexpect {
     ($option:expr) => (sexpect!($option, $crate::errors::SmzdhError::ParamsError.to_response(None)));
     ($option:expr, $modifier:expr) => (match $option {
         ::std::option::Option::Some(x) => x,
-        ::std::option::Option::None =>
-            return ::std::result::Result::Ok(::iron::response::Response::with($modifier)),
+        ::std::option::Option::None => {
+            info!("expect");
+            return ::std::result::Result::Ok(::iron::response::Response::with($modifier));
+        },
     })
 }
 

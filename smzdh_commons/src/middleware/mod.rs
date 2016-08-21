@@ -10,6 +10,7 @@ use redis;
 use postgres::error as pe;
 use rustc_serialize::json::Json as RJson;
 use iron::mime::{Mime, TopLevel, SubLevel};
+use std::rc::Rc;
 
 use std::io::Read;
 
@@ -67,16 +68,34 @@ impl typemap::Key for Cookies { type Value = i64; }
 
 impl BeforeMiddleware for Cookies {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        let cookies = req.headers.get::<Cookie>();
-        info!("Cookies is {:?}",cookies);
-        req.extensions.insert::<Cookies>(10);
+        let uid:i64;
+        {
+            let smzdh_user = match req.headers.get::<Cookie>().and_then(|cookies| {
+                cookies.iter().filter(|cookie| {
+                    &*cookie.name == "smzdh_user"
+                }).next()
+            }) {
+                Some(x) => x,
+                None => {return Ok(());},
+            };
+            uid = match smzdh_user.value.parse::<i64>() {
+                Ok(x) => x,
+                Err(e) => {
+                    info!("Parse cookie smzdh_user error:{:?}",e);
+                    return Err(super::errors::SmzdhError::ParamsError.into_iron_error(
+                        Some(String::from("Cookies 无效"))))
+                }
+            };
+            info!("Cookies is {:?}",uid);
+        }
+        req.extensions.insert::<Cookies>(uid);
         Ok(())
     }
 }
 
 pub struct Json;
 
-impl typemap::Key for Json { type Value = RJson ;}
+impl typemap::Key for Json { type Value = Rc<RJson> ;}
 
 impl BeforeMiddleware for Json {
     fn before(&self,req:&mut Request) -> IronResult<()> {
@@ -91,7 +110,7 @@ impl BeforeMiddleware for Json {
                         let mut body = String::new();
                         let _ = req.body.read_to_string(&mut body);
                         match RJson::from_str(&*body) {
-                            Ok(j) => j,
+                            Ok(j) => Rc::new(j),
                             Err(e) => {
                                 info!("Parse json error raw:{},error:{:?}",body,e);
                                 return Err(

@@ -6,6 +6,7 @@ use redis::Commands;
 use redis;
 use smzdh_commons::headers::{JsonResponse,success_json_response};
 use smzdh_commons::errors::SmzdhError;
+use smzdh_commons::middleware::Cookies;
 
 pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
@@ -27,7 +28,9 @@ pub fn postgres_handler(req: &mut Request) -> IronResult<Response> {
     success_json_response(&response)
 }
 
-pub fn test(_: &mut Request) -> IronResult<Response> {
+pub fn test(req: &mut Request) -> IronResult<Response> {
+    let uid = req.extensions.get::<Cookies>();
+    info!("uid:{:?}",uid);
     let mut response = JsonResponse::new();
     response.set_result("pong");
     success_json_response(&response)

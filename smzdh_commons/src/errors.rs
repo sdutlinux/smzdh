@@ -16,6 +16,7 @@ pub enum SmzdhError {
     Test,
     InternalServerError,
     ParamsError,
+    UserOrPassError,
 }
 
 impl Display for SmzdhError {
@@ -30,6 +31,7 @@ impl Error for SmzdhError {
             SmzdhError::Test => "test error",
             SmzdhError::InternalServerError => "服务器内部错误",
             SmzdhError::ParamsError => "请求参数错误",
+            SmzdhError::UserOrPassError => "用户名或者密码错误",
         }
     }
 }
