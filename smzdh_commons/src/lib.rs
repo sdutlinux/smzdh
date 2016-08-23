@@ -11,6 +11,8 @@ extern crate redis;
 extern crate router;
 extern crate rand;
 extern crate chrono;
+extern crate url;
+extern crate plugin;
 
 pub mod headers;
 pub mod utils;
@@ -54,7 +56,7 @@ macro_rules! stry {
                         ::std::string::String::from($desc)
                     )
                 )
-            )
+            );
         }
     }
     )
@@ -83,19 +85,9 @@ macro_rules! sexpect {
                         )
                     )
                 )
-            )
+            );
         }
     }
-    )
-}
-
-#[macro_export]
-macro_rules! pconn {
-    ($req:expr) => (
-        {
-            let connect = sexpect!($req.extensions.get_mut::<$crate::middleware::DConnectm>());
-            stry!(connect.get_postgres_conn())
-        }
     )
 }
 

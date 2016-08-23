@@ -13,6 +13,8 @@ rand = "*"
 router = "*"
 clippy = "*"
 chrono = "*"
+url = "*"
+plugin = "*"
 
 [dependencies.postgres]
 version = "*"

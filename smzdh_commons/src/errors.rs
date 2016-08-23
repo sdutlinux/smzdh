@@ -6,7 +6,7 @@ use iron::modifiers::Header;
 
 use std::fmt::Display;
 use std::fmt;
-use std::error::Error;
+use std::error::Error as StdError;
 
 use super::headers;
 
@@ -25,7 +25,7 @@ impl Display for SError {
     }
 }
 
-impl Error for SError {
+impl StdError for SError {
     fn description(&self) -> &'static str {
         match *self {
             SError::Test => "test error",
@@ -70,7 +70,7 @@ impl Display for BError {
     }
 }
 
-impl Error for BError {
+impl StdError for BError {
     fn description(&self) -> &'static str {
         match *self {
             BError::UserNotLogin => "用户未登陆",

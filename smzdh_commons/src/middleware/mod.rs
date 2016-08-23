@@ -3,64 +3,10 @@ use iron::{BeforeMiddleware, AfterMiddleware, typemap};
 use iron::status;
 use iron::headers::{Cookie,ContentType};
 use iron::method::Method;
-use postgres::Connection;
 use router::NoRoute;
-use redis::Connection as RedisConn;
-use redis;
-use postgres::error as pe;
 use rustc_serialize::json::Json as RJson;
 use iron::mime::{Mime, TopLevel, SubLevel};
-use std::rc::Rc;
-
 use std::io::Read;
-
-use super::databases;
-use super::scredis;
-
-pub struct DConnect {
-    postgres_conn: Option<Result<Connection,pe::ConnectError>>,
-    redis_conn: Option<Result<RedisConn,redis::RedisError>>
-}
-
-pub struct DConnectm;
-
-impl DConnect {
-    pub fn get_postgres_conn(& mut self) -> Result<&mut Connection,&mut pe::ConnectError> {
-        match self.postgres_conn {
-            Some(ref mut c) => c.as_mut(),
-            None => {
-                self.postgres_conn = Some(databases::conn());
-                self.get_postgres_conn()
-            },
-        }
-    }
-
-    pub fn get_redis_conn(&mut self) -> Result<&mut RedisConn, &mut redis::RedisError> {
-        match self.redis_conn {
-            Some(ref mut c) => c.as_mut(),
-            None => {
-                self.redis_conn = Some(scredis::redis_conn());
-                self.get_redis_conn()
-            }
-        }
-    }
-
-    fn new() -> Self {
-        DConnect {
-            postgres_conn:None,
-            redis_conn:None,
-        }
-    }
-}
-
-impl typemap::Key for DConnectm { type Value = DConnect ;}
-
-impl BeforeMiddleware for DConnectm {
-    fn before(&self,req:&mut Request) -> IronResult<()> {
-        req.extensions.insert::<DConnectm>(DConnect::new());
-        Ok(())
-    }
-}
 
 pub struct Cookies;
 
@@ -95,7 +41,9 @@ impl BeforeMiddleware for Cookies {
 
 pub struct Json;
 
-impl typemap::Key for Json { type Value = Rc<RJson> ;}
+impl typemap::Key for Json { type Value = RJson ;}
+
+
 
 impl BeforeMiddleware for Json {
     fn before(&self,req:&mut Request) -> IronResult<()> {
@@ -110,7 +58,7 @@ impl BeforeMiddleware for Json {
                         let mut body = String::new();
                         let _ = req.body.read_to_string(&mut body);
                         match RJson::from_str(&*body) {
-                            Ok(j) => Rc::new(j),
+                            Ok(j) => j,
                             Err(e) => {
                                 info!("Parse json error raw:{},error:{:?}",body,e);
                                 return Err(
