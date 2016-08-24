@@ -62,6 +62,7 @@ impl SError {
 #[derive(Debug)]
 pub enum BError {
     UserNotLogin,
+    LoginFail,
 }
 
 impl Display for BError {
@@ -74,6 +75,7 @@ impl StdError for BError {
     fn description(&self) -> &'static str {
         match *self {
             BError::UserNotLogin => "用户未登陆",
+            BError::LoginFail => "登陆失败",
         }
     }
 }
@@ -81,7 +83,7 @@ impl StdError for BError {
 impl BError {
     pub fn to_response(&self,desc:Option<String>) -> (Status,Header<ContentType>,String) {
         let status = match * self {
-            BError::UserNotLogin => status::BadRequest,
+            BError::UserNotLogin | BError::LoginFail => status::BadRequest,
         };
         let mut response = headers::JsonResponse::new();
         match desc {

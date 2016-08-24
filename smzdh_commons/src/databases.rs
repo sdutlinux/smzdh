@@ -1,13 +1,11 @@
 use postgres::error as pe;
 use postgres::{Connection, SslMode};
-use postgres::rows::Row;
-use postgres::rows::Iter;
 use super::config;
 use super::utils;
 use chrono::*;
-use std::iter::Iterator;
+use rustc_serialize::json::{ToJson, Json};
+use std::collections::BTreeMap;
 
-#[derive(RustcEncodable)]
 pub struct User {
     pub id:i32,
     pub username:String,
@@ -16,13 +14,34 @@ pub struct User {
     pub created:DateTime<Local>,
 }
 
-#[derive(RustcEncodable)]
+impl ToJson for User {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("usename"),Json::String(self.username.clone()));
+        tmp.insert(String::from("created"),Json::String(format!{"{}",self.created}));
+        Json::Object(tmp)
+    }
+}
+
 pub struct Post {
     pub id:i32,
     pub title:String,
     pub content:String,
     pub author:i32,
     pub created:DateTime<Local>,
+}
+
+impl ToJson for Post {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title.clone()));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(format!{"{}",self.created}));
+        Json::Object(tmp)
+    }
 }
 
 fn create_conn(url:&str) -> Result<Connection,pe::ConnectError> {

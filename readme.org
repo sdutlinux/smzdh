@@ -21,9 +21,9 @@
    3. [[http://rust-lang.org/][Rust]]
       nightly 版本,目前使用 cargo 作为包管理工具 <2016-08-11 Thu>
 ** SMZDH Todo List
-*** TODO [#A] 登录注册功能 [0/2]
-    - [ ] 登录
-    - [ ] 注册
+*** TODO [#A] 登录注册功能 [2/2]
+    - [X] 登录
+    - [X] 注册
 
 *** TODO [#A] 发帖回复 [0/2]
     - [ ] 发帖
