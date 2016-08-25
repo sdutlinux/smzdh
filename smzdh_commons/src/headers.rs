@@ -64,8 +64,12 @@ impl JsonResponse {
         self.data
     }
 
-    pub fn clone_from_brmap(&mut self,othre:BTreeMap<String,Json>) {
-        self.data = othre;
+    pub fn move_from_btmap(&mut self,other:Json) {
+        if let Json::Object(map) = other {
+            self.data = map;
+        } else {
+            self.insert(String::from("__inner"),&other);
+        }
     }
 
     pub fn to_json_string(&self) -> String {

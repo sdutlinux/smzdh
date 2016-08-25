@@ -40,7 +40,9 @@ pub fn run() {
     router.get("/logout", api::users::logout);
 
     router.get("/post",api::posts::posts_list);
-    router.post("/post",hello::test);
+    router.post("/post",api::posts::create_post);
+    router.get("/post/:id",api::posts::get_post_by_id);
+
 
     router.get("/error",hello::error_test);
     let mut chain = Chain::new(router);

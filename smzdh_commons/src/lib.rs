@@ -41,7 +41,7 @@ macro_rules! stry {
     ($result:expr, $modifier:expr) => (match $result {
         ::std::result::Result::Ok(val) => val,
         ::std::result::Result::Err(err) => {
-            info!("Error case{:?}",err);
+            info!("Error case {}",err);
             return ::std::result::Result::Err(
                 $modifier.into_iron_error(None));
         }
@@ -49,7 +49,7 @@ macro_rules! stry {
     ($result:expr,$modifier:expr,$desc:expr) => (match $result {
         ::std::result::Result::Ok(x) => x,
         ::std::result::Result::Err(err) => {
-            info!("Error case{:?}",err);
+            info!("Error case {}",err);
             return ::std::result::Result::Err(
                 $modifier.into_iron_error(
                     ::std::option::Option::Some(

@@ -10,11 +10,11 @@ use std::io::Read;
 
 pub struct Cookies;
 
-impl typemap::Key for Cookies { type Value = i64; }
+impl typemap::Key for Cookies { type Value = i32; }
 
 impl BeforeMiddleware for Cookies {
     fn before(&self,req:&mut Request) -> IronResult<()> {
-        let uid:i64;
+        let uid:i32;
         {
             let smzdh_user = match req.headers.get::<Cookie>().and_then(|cookies| {
                 cookies.iter().filter(|cookie| {
@@ -24,7 +24,7 @@ impl BeforeMiddleware for Cookies {
                 Some(x) => x,
                 None => {return Ok(());},
             };
-            uid = match smzdh_user.value.parse::<i64>() {
+            uid = match smzdh_user.value.parse::<i32>() {
                 Ok(x) => x,
                 Err(e) => {
                     info!("Parse cookie smzdh_user error:{:?}",e);
@@ -42,8 +42,6 @@ impl BeforeMiddleware for Cookies {
 pub struct Json;
 
 impl typemap::Key for Json { type Value = RJson ;}
-
-
 
 impl BeforeMiddleware for Json {
     fn before(&self,req:&mut Request) -> IronResult<()> {

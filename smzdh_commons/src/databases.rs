@@ -99,7 +99,7 @@ pub fn create_post(conn:&mut Connection,title:&str,content:&str,author:i32)
                  &[&title,&content,&author])
 }
 
-pub fn get_post(conn:&mut Connection,id:i32) -> Result<Option<Post>,pe::Error> {
+pub fn get_post_by_id(conn:&mut Connection,id:i32) -> Result<Option<Post>,pe::Error> {
     conn.query("SELECT id,title,content,author,created FROM posts WHERE id = $1",
                &[&id]).map(|rows| {
                    rows.iter().next().map(|row| {
@@ -115,7 +115,7 @@ pub fn get_post(conn:&mut Connection,id:i32) -> Result<Option<Post>,pe::Error> {
 }
 
 
-pub fn post_list(conn:&mut Connection,skip:Option<i32>,limit:Option<i32>)
+pub fn post_list(conn:&mut Connection,skip:Option<i64>,limit:Option<i64>)
                  -> Result<Vec<Post>,pe::Error> {
     conn.query("SELECT id,title,content,author,created FROM posts OFFSET $1 LIMIT $2",
                &[&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
@@ -130,21 +130,3 @@ pub fn post_list(conn:&mut Connection,skip:Option<i32>,limit:Option<i32>)
                    }).collect()
                })
 }
-
-/*
-pub fn post_list(conn:&mut Connection,skip:Option<i32>,limit:Option<i32>)
-                 -> Result<Box<::std::iter::Map<Iter,fn(Row) -> Post>>,pe::Error> {
-    conn.query("SELECT id,title,content,author,created FROM posts OFFSET $1 LIMIT $2",
-               &[&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
-                   Box::new(rows.into_iter().map(|row| {
-                       Post {
-                           id:row.get(0),
-                           title:row.get(1),
-                           content:row.get(2),
-                           author:row.get(3),
-                           created:row.get(4),
-                       }
-                   }))
-               })
-}
-*/
