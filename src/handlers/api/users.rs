@@ -8,10 +8,9 @@ use smzdh_commons::middleware::{Json,Cookies};
 use smzdh_commons::databases;
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
-    let json = sexpect!(req.extensions.get::<Json>(),
-                        SError::ParamsError,
-                        "body必须是Json格式。");
-    let object = sexpect!(json.as_object(),
+    let object = sexpect!(sexpect!(req.extensions.get::<Json>(),
+                                   SError::ParamsError,
+                                   "body 必须是 Json.").as_object(),
                           SError::ParamsError,
                           "Json 格式错误。");
     let username = jget!(object,"username",as_string);
@@ -22,11 +21,11 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn signin(req:&mut Request) -> IronResult<Response> {
-    let json = sexpect!(req.extensions.get::<Json>(),
-                        SError::ParamsError,
-                        "body 必须是 Json.");
-    let object = sexpect!(json.as_object(),
-                          SError::ParamsError);
+    let object = sexpect!(sexpect!(req.extensions.get::<Json>(),
+                                   SError::ParamsError,
+                                   "body 必须是 Json.").as_object(),
+                          SError::ParamsError,
+                          "Json 格式错误。");
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
     let mut postgres_c = pconn!();

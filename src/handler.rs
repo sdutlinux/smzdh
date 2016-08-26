@@ -43,12 +43,14 @@ pub fn run() {
     router.post("/post",api::posts::create_post);
     router.get("/post/:id",api::posts::get_post_by_id);
 
+    router.get("/comment",api::comments::get_comments_by_post_id);
+    router.post("/comment",api::comments::create_comment);
+
 
     router.get("/error",hello::error_test);
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Cookies);
     chain.link_before(middleware::Json);
-//    chain.link_before(middleware::DConnectm);
     chain.link_after(middleware::Custom404);
     match Iron::new(chain).http("localhost:3000") {
         Ok(_) => info!("Server start success on 3000"),

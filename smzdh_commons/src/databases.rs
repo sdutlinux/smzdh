@@ -19,7 +19,8 @@ impl ToJson for User {
         let mut tmp = BTreeMap::new();
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
         tmp.insert(String::from("usename"),Json::String(self.username.clone()));
-        tmp.insert(String::from("created"),Json::String(format!{"{}",self.created}));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
         Json::Object(tmp)
     }
 }
@@ -39,7 +40,41 @@ impl ToJson for Post {
         tmp.insert(String::from("title"),Json::String(self.title.clone()));
         tmp.insert(String::from("content"),Json::String(self.content.clone()));
         tmp.insert(String::from("author"),Json::I64(self.author as i64));
-        tmp.insert(String::from("created"),Json::String(format!{"{}",self.created}));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+
+impl Post {
+    pub fn into_simple_json(self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+////
+pub struct Comment {
+    pub id:i32,
+    pub content:String,
+    pub author:i32,
+    pub post_id:i32,
+    pub created:DateTime<Local>,
+}
+
+impl ToJson for Comment {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("post_id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
         Json::Object(tmp)
     }
 }
@@ -55,7 +90,7 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
 #[macro_export]
 macro_rules! pconn {
     () => (
-        match $crate::databases::conn() {
+        let mut pc = match $crate::databases::conn() {
             ::std::result::Result::Ok(c) => c,
             ::std::result::Result::Err(e) => {
                 info!("{:?}",e);
@@ -126,6 +161,29 @@ pub fn post_list(conn:&mut Connection,skip:Option<i64>,limit:Option<i64>)
                            content:row.get(2),
                            author:row.get(3),
                            created:row.get(4),
+                       }
+                   }).collect()
+               })
+}
+
+pub fn create_comment(conn:&mut Connection,content:&str,author:i32,post_id:i32)
+                      -> ::postgres::Result<u64> {
+    conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
+                 &[&content,&author,&post_id])
+}
+
+pub fn get_comment_by_post_id(conn:&mut Connection,post_id:i32,skip:Option<i64>
+                              ,limit:Option<i64>)
+                              -> Result<Vec<Comment>,pe::Error> {
+    conn.query("SELECT id,comment,author,post_id,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
+               &[&post_id,&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
+                   rows.iter().map(|row| {
+                       Comment {
+                           id:row.get(0),
+                           content:row.get(1),
+                           author:row.get(2),
+                           post_id:row.get(3),
+                           created:row.get(4)
                        }
                    }).collect()
                })
