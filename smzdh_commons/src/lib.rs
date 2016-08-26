@@ -30,7 +30,7 @@ macro_rules! jget {
             tmp.$convert()
         }),
                  $crate::errors::SError::ParamsError,
-                 &*format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]))
+                 &*format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]));
     )
 }
 
@@ -58,7 +58,7 @@ macro_rules! stry {
                 )
             );
         }
-    }
+    };
     )
 }
 
@@ -73,7 +73,7 @@ macro_rules! sexpect {
                     $modifier.to_response(None)
                 ));
         },
-    });
+    };);
     ($option:expr,$modifier:expr,$desc:expr) => (match $option {
         ::std::option::Option::Some(x) => x,
         ::std::option::Option::None => {
@@ -87,7 +87,7 @@ macro_rules! sexpect {
                 )
             );
         }
-    }
+    };
     )
 }
 

@@ -10,8 +10,8 @@ use smzdh_commons::middleware::Json;
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let _ = sexpect!(req.extensions.get::<Cookies>(),
                        BError::UserNotLogin);
-    let mut pc = pconn!();
-    let posts = stry!(databases::post_list(&mut pc,None,None));
+    pconn!(pc);
+    let posts = stry!(databases::post_list(&pc,None,None));
     let mut response = headers::JsonResponse::new();
     response.insert("posts",&posts.into_iter().map(|x|
                                                    {x.into_simple_json()}
@@ -27,8 +27,8 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
         SError::ParamsError,"未传入 id 参数。"
     ).parse::<i32>(),
                    SError::ParamsError,"id 格式错误。");
-    let mut pc = pconn!();
-    let post = sexpect!(stry!(databases::get_post_by_id(&mut pc,id)));
+    pconn!(pc);
+    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)));
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(post.to_json());
     headers::success_json_response(&response)
@@ -43,7 +43,7 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
                           SError::ParamsError);
     let title = jget!(object,"title",as_string);
     let content = jget!(object,"content",as_string);
-    let mut pc = pconn!();
-    stry!(databases::create_post(&mut pc,title,content,*uid));
+    pconn!(pc);
+    stry!(databases::create_post(&pc,title,content,*uid));
     headers::success_json_response(&headers::JsonResponse::new())
 }

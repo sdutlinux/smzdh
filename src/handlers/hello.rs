@@ -16,8 +16,8 @@ pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
 }
 
 pub fn postgres_handler(_: &mut Request) -> IronResult<Response> {
-    let postgres_c = pconn!();
-    let result = stry!(postgres_c.query("SELECT * from users;", &[]));
+    pconn!(pc);
+    let result = stry!(pc.query("SELECT * from users;", &[]));
     let mut response = JsonResponse::new();
     let mut vec = Vec::<i32>::new();
     for row in &result {

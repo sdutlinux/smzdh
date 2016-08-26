@@ -15,8 +15,8 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
                           "Json 格式错误。");
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
-    let mut postgres_c = pconn!();
-    stry!(databases::create_user(&mut postgres_c,username,password));
+    pconn!(pc);
+    stry!(databases::create_user(&pc,username,password));
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
@@ -28,8 +28,8 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
                           "Json 格式错误。");
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
-    let mut postgres_c = pconn!();
-    let user =  sexpect!(stry!(databases::find_user(&mut postgres_c,username)),
+    pconn!(pc);
+    let user =  sexpect!(stry!(databases::find_user(&pc,username)),
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",username);

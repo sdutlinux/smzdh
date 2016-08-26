@@ -1,0 +1,7 @@
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    content VARCHAR(1024) NOT NULL,
+    author INTEGER NOT NULL,
+    post_id INTEGER NOT NULL,
+    created TIMESTAMP WITH TIME ZONE DEFAULT now()
+);

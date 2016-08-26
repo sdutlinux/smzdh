@@ -1,0 +1,7 @@
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(128) NOT NULL,
+    content TEXT NOT NULL,
+    author INTEGER NOT NULL,
+    created TIMESTAMP WITH TIME ZONE DEFAULT now()
+);

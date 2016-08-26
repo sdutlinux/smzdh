@@ -89,8 +89,9 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
 
 #[macro_export]
 macro_rules! pconn {
-    () => (
-        let mut pc = match $crate::databases::conn() {
+    () => (pconn!(pc));
+    ($v:ident) => (
+        let $v = match $crate::databases::conn() {
             ::std::result::Result::Ok(c) => c,
             ::std::result::Result::Err(e) => {
                 info!("{:?}",e);
@@ -98,20 +99,20 @@ macro_rules! pconn {
                     $crate::errors::SError::InternalServerError.into_iron_error(
                         None
                     )
-                )
+                );
             }
-        }
+        };
     )
 }
 
 
-pub fn create_user(conn:&mut Connection,name:&str,pass:&str) -> ::postgres::Result<u64> {
+pub fn create_user(conn:&Connection,name:&str,pass:&str) -> ::postgres::Result<u64> {
     let (ep,salt) = utils::encrypt(pass);
     conn.execute("INSERT INTO users (username,password,salt) VALUES ($1,$2,$3)",
                  &[&name,&ep,&salt])
 }
 
-pub fn find_user(conn:&mut Connection,name:&str) -> Result<Option<User>,pe::Error> {
+pub fn find_user(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
     conn.query("SELECT id,username,password,salt,created FROM users WHERE username = $1",
                &[&name]).map(|rows| {
                    rows.iter().next().map(|row| {
@@ -128,13 +129,13 @@ pub fn find_user(conn:&mut Connection,name:&str) -> Result<Option<User>,pe::Erro
 
 //pub fn update_user(conn:&mut ::postgres::Connection,id:i32)
 
-pub fn create_post(conn:&mut Connection,title:&str,content:&str,author:i32)
+pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
                    -> ::postgres::Result<u64> {
     conn.execute("INSERT INTO posts (title,content,author) VALUES ($1,$2,$3)",
                  &[&title,&content,&author])
 }
 
-pub fn get_post_by_id(conn:&mut Connection,id:i32) -> Result<Option<Post>,pe::Error> {
+pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error> {
     conn.query("SELECT id,title,content,author,created FROM posts WHERE id = $1",
                &[&id]).map(|rows| {
                    rows.iter().next().map(|row| {
@@ -150,7 +151,7 @@ pub fn get_post_by_id(conn:&mut Connection,id:i32) -> Result<Option<Post>,pe::Er
 }
 
 
-pub fn post_list(conn:&mut Connection,skip:Option<i64>,limit:Option<i64>)
+pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>)
                  -> Result<Vec<Post>,pe::Error> {
     conn.query("SELECT id,title,content,author,created FROM posts OFFSET $1 LIMIT $2",
                &[&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
@@ -166,13 +167,13 @@ pub fn post_list(conn:&mut Connection,skip:Option<i64>,limit:Option<i64>)
                })
 }
 
-pub fn create_comment(conn:&mut Connection,content:&str,author:i32,post_id:i32)
+pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
                       -> ::postgres::Result<u64> {
     conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
                  &[&content,&author,&post_id])
 }
 
-pub fn get_comment_by_post_id(conn:&mut Connection,post_id:i32,skip:Option<i64>
+pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
                               ,limit:Option<i64>)
                               -> Result<Vec<Comment>,pe::Error> {
     conn.query("SELECT id,comment,author,post_id,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
