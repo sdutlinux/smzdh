@@ -6,6 +6,7 @@ use iron::method::Method;
 use router::NoRoute;
 use rustc_serialize::json::Json as RJson;
 use iron::mime::{Mime, TopLevel, SubLevel};
+use rustc_serialize::base64::{FromBase64};
 use std::io::Read;
 
 pub struct Cookies;
@@ -23,6 +24,13 @@ impl BeforeMiddleware for Cookies {
             }) {
                 Some(x) => x,
                 None => {return Ok(());},
+            };
+            let bu = match smzdh_user.value.from_base64() {
+                Ok(s) => s,
+                Err(e) => {
+                    info!("from base64 fail {:?}",e);
+                    unreachable!();
+                },
             };
             uid = match smzdh_user.value.parse::<i32>() {
                 Ok(x) => x,

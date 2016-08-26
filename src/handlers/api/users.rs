@@ -1,5 +1,8 @@
 use iron::prelude::*;
 use iron::headers::{SetCookie,CookiePair};
+use rand::{ Rng, OsRng };
+use redis::Commands;
+use rustc_serialize::base64::{STANDARD,ToBase64};
 
 use smzdh_commons::headers;
 use smzdh_commons::utils;
@@ -33,11 +36,19 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",username);
-        headers::success_json_response(&headers::JsonResponse::new()).map(|mut resp| {
-            let mut cp = CookiePair::new("smzdh_user".to_string(), format!("{}",user.id));
+        let mut rng = OsRng::new().ok().unwrap();
+        let mut r = [0;16];
+        rng.fill_bytes(&mut r);
+        headers::success_json_response(&headers::JsonResponse::new()).and_then(|mut resp| {
+            let ed = stry!(utils::encrypt_cookie(&r,&*user.salt));
+            let es = ed.to_base64(STANDARD);
+            rconn!(rc);
+            stry!(rc.set_ex(&*es,user.id,604800));
+            let mut cp = CookiePair::new("smzdh_user".to_string(),
+                                         es);
             cp.max_age = Some(604800);
             resp.headers.set(SetCookie(vec![cp]));
-            resp
+            Ok(resp)
         })
     } else {
         Ok(Response::with(SError::Test.to_response(Some("登陆失败".to_string()))))

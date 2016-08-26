@@ -106,7 +106,7 @@ macro_rules! pconn {
 
 
 pub fn create_user(conn:&Connection,name:&str,pass:&str) -> ::postgres::Result<u64> {
-    let (ep,salt) = utils::encrypt(pass);
+    let (ep,salt) = utils::sha_encrypt(pass);
     conn.execute("INSERT INTO users (username,password,salt) VALUES ($1,$2,$3)",
                  &[&name,&ep,&salt])
 }
