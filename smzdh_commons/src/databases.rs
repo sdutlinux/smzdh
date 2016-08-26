@@ -89,7 +89,6 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
 
 #[macro_export]
 macro_rules! pconn {
-    () => (pconn!(pc));
     ($v:ident) => (
         let $v = match $crate::databases::conn() {
             ::std::result::Result::Ok(c) => c,
@@ -126,8 +125,6 @@ pub fn find_user(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
                    })
                })
 }
-
-//pub fn update_user(conn:&mut ::postgres::Connection,id:i32)
 
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
                    -> ::postgres::Result<u64> {
