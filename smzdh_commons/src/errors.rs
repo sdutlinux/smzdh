@@ -36,6 +36,11 @@ impl StdError for SError {
     }
 }
 
+trait ToRE {
+    fn to_response(&self,desc:Option<String>) -> (Status, Header<ContentType>, String);
+    fn into_iron_error(self,desc:Option<String>) -> IronError;
+}
+
 impl SError {
     pub fn to_response(&self,desc:Option<String>) -> (Status, Header<ContentType>, String) {
         let status = match *self {
@@ -94,5 +99,10 @@ impl BError {
             status,headers::json_headers(),
             response.to_json_string(),
         )
+    }
+
+    pub fn into_iron_error(self,desc:Option<String>) -> IronError {
+        let response = self.to_response(desc);
+        IronError::new(self,response)
     }
 }

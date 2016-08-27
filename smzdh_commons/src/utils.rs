@@ -105,7 +105,25 @@ pub fn decrypt(encrypted_data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, 
     Ok(final_result)
 }
 
-static SECRET:&'static [u8] = b"smzdhaxiba";
+pub fn hello() {
+    let message = "Hello World!";
+    // In a real program, the key and iv may be determined
+    // using some other mechanism. If a password is to be used
+    // as a key, an algorithm like PBKDF2, Bcrypt, or Scrypt (all
+    // supported by Rust-Crypto!) would be a good choice to derive
+    // a password. For the purposes of this example, the key and
+    // iv are just random values.
+    //let key = [0;32];
+    //let iv = [0;16];
+    let encrypted_data = encrypt(message.as_bytes(), KEY, SECRET).ok().unwrap();
+    let decrypted_data = decrypt(&encrypted_data[..], KEY, SECRET).ok().unwrap();
+
+    info!("{:?}",decrypted_data);
+    info!("{:?}",message.as_bytes().to_vec());
+}
+
+static SECRET:&'static [u8] = b"smzdhaxibaahouga";
+static KEY:&'static [u8] = b"qmfygnlgabhuxtgcpwkxdzxquhhbbqxw";
 
 pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let bsalt = match salt.from_base64() {
@@ -115,9 +133,9 @@ pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, symmetriccipher:
             unreachable!();
         },
     };
-    encrypt(&[data,&bsalt].concat(),SECRET,&[])
+    encrypt(&[data,&bsalt].concat(),KEY,SECRET)
 }
 
 pub fn decrypt_cookie(edata:&[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
-    decrypt(edata,SECRET,&[])
+    decrypt(edata,KEY,SECRET)
 }

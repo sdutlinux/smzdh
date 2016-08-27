@@ -43,7 +43,7 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
             let ed = stry!(utils::encrypt_cookie(&r,&*user.salt));
             let es = ed.to_base64(STANDARD);
             rconn!(rc);
-            stry!(rc.set_ex(&*es,user.id,604800));
+            stry!(rc.set_ex(r.to_base64(STANDARD),user.id,604800));
             let mut cp = CookiePair::new("smzdh_user".to_string(),
                                          es);
             cp.max_age = Some(604800);

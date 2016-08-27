@@ -14,15 +14,6 @@ extern crate chrono;
 extern crate url;
 extern crate plugin;
 
-pub mod headers;
-pub mod utils;
-pub mod databases;
-pub mod middleware;
-pub mod scredis;
-mod config;
-pub mod errors;
-
-
 #[macro_export]
 macro_rules! jget {
     ($json:expr,$key:expr,$convert:ident) => (
@@ -90,6 +81,49 @@ macro_rules! sexpect {
     };
     )
 }
+
+#[macro_export]
+macro_rules! rconn {
+    ($v:ident) => (
+        let $v = match $crate::scredis::redis_conn() {
+            ::std::result::Result::Ok(c) => c,
+            ::std::result::Result::Err(e) => {
+                info!("{:?}",e);
+                return ::std::result::Result::Err(
+                    $crate::errors::SError::InternalServerError.into_iron_error(
+                        None
+                    )
+                );
+            }
+        };
+    )
+}
+
+#[macro_export]
+macro_rules! pconn {
+    ($v:ident) => (
+        let $v = match $crate::databases::conn() {
+            ::std::result::Result::Ok(c) => c,
+            ::std::result::Result::Err(e) => {
+                info!("{:?}",e);
+                return ::std::result::Result::Err(
+                    $crate::errors::SError::InternalServerError.into_iron_error(
+                        None
+                    )
+                );
+            }
+        };
+    )
+}
+
+pub mod headers;
+pub mod utils;
+pub mod databases;
+pub mod middleware;
+pub mod scredis;
+mod config;
+pub mod errors;
+
 
 #[cfg(test)]
 mod tests {
