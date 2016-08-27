@@ -38,6 +38,7 @@ pub fn run() {
     router.post("/signup", api::users::signup);
     router.post("/signin", api::users::signin);
     router.get("/logout", api::users::logout);
+    router.get("/user/:id",hello::test);
 
     router.get("/post",api::posts::posts_list);
     router.post("/post",api::posts::create_post);

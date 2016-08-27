@@ -87,27 +87,8 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
     create_conn(config::URL)
 }
 
-#[macro_export]
-macro_rules! pconn {
-    () => (pconn!(pc));
-    ($v:ident) => (
-        let $v = match $crate::databases::conn() {
-            ::std::result::Result::Ok(c) => c,
-            ::std::result::Result::Err(e) => {
-                info!("{:?}",e);
-                return ::std::result::Result::Err(
-                    $crate::errors::SError::InternalServerError.into_iron_error(
-                        None
-                    )
-                );
-            }
-        };
-    )
-}
-
-
 pub fn create_user(conn:&Connection,name:&str,pass:&str) -> ::postgres::Result<u64> {
-    let (ep,salt) = utils::encrypt(pass);
+    let (ep,salt) = utils::sha_encrypt(pass);
     conn.execute("INSERT INTO users (username,password,salt) VALUES ($1,$2,$3)",
                  &[&name,&ep,&salt])
 }
@@ -126,8 +107,6 @@ pub fn find_user(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
                    })
                })
 }
-
-//pub fn update_user(conn:&mut ::postgres::Connection,id:i32)
 
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
                    -> ::postgres::Result<u64> {

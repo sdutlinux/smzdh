@@ -6,7 +6,12 @@ use iron::method::Method;
 use router::NoRoute;
 use rustc_serialize::json::Json as RJson;
 use iron::mime::{Mime, TopLevel, SubLevel};
+use rustc_serialize::base64::{FromBase64,STANDARD,ToBase64};
 use std::io::Read;
+use redis::Commands;
+
+use super::utils;
+use super::errors::{SError,BError};
 
 pub struct Cookies;
 
@@ -24,14 +29,23 @@ impl BeforeMiddleware for Cookies {
                 Some(x) => x,
                 None => {return Ok(());},
             };
-            uid = match smzdh_user.value.parse::<i32>() {
-                Ok(x) => x,
+            let ebu = match smzdh_user.value.from_base64() {
+                Ok(s) => s,
                 Err(e) => {
-                    info!("Parse cookie smzdh_user error:{:?}",e);
-                    return Err(super::errors::SError::ParamsError.into_iron_error(
-                        Some(String::from("Cookies 无效"))))
-                }
+                    info!("from base64 fail {:?}",e);
+                    return Ok(());
+                },
             };
+            let bu = stry!(utils::decrypt_cookie(&ebu),
+                           BError::UserNotLogin)[0..16].to_base64(STANDARD);
+            rconn!(rc);
+            match rc.get(bu) {
+                Ok(x) => {uid = x},
+                Err(e) => {
+                    info!("get cookie error:{:}",e);
+                    return Ok(());
+                }
+            }
             info!("Cookies is {:?}",uid);
         }
         req.extensions.insert::<Cookies>(uid);
