@@ -6,6 +6,6 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
-sudo:false
+sudo: false
 script:
   - cargo build --verbose
