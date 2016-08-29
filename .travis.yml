@@ -3,6 +3,6 @@ rust:
   - nightly
 sudo: false
 before_script:
-  - move smzdh_commons/src/config.rs.example smzdh_commons/src/config.rs
+  - mv smzdh_commons/src/config.rs.example smzdh_commons/src/config.rs
 script:
   - cargo build --verbose
