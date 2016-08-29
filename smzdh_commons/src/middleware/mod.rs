@@ -11,7 +11,7 @@ use std::io::Read;
 use redis::Commands;
 
 use super::utils;
-use super::errors::{SError,BError};
+use super::errors::{BError};
 
 pub struct Cookies;
 
