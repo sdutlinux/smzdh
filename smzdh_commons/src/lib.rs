@@ -6,6 +6,8 @@ extern crate crypto;
 extern crate rustc_serialize;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate bitflags;
 extern crate postgres;
 extern crate redis;
 extern crate router;
@@ -13,6 +15,7 @@ extern crate rand;
 extern crate chrono;
 extern crate url;
 extern crate plugin;
+extern crate hyper;
 
 #[macro_export]
 macro_rules! jget {
@@ -123,6 +126,7 @@ pub mod middleware;
 pub mod scredis;
 mod config;
 pub mod errors;
+pub mod email;
 
 
 #[cfg(test)]

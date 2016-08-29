@@ -6,11 +6,18 @@ use chrono::*;
 use rustc_serialize::json::{ToJson, Json};
 use std::collections::BTreeMap;
 
+bitflags! {
+    pub flags UserFlag: u32 {
+        const VERIFY_EMAIL       = 0b00000001,
+    }
+}
+
 pub struct User {
     pub id:i32,
     pub username:String,
     pub password:String,
     pub salt:String,
+    pub flags:i64,
     pub created:DateTime<Local>,
 }
 
@@ -30,6 +37,7 @@ pub struct Post {
     pub title:String,
     pub content:String,
     pub author:i32,
+    pub flags:i64,
     pub created:DateTime<Local>,
 }
 
@@ -63,6 +71,7 @@ pub struct Comment {
     pub content:String,
     pub author:i32,
     pub post_id:i32,
+    pub flags:i64,
     pub created:DateTime<Local>,
 }
 
@@ -148,8 +157,8 @@ pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>)
 
 pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
                       -> ::postgres::Result<u64> {
-    conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
-                 &[&content,&author,&post_id])
+conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
+             &[&content,&author,&post_id])
 }
 
 pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
