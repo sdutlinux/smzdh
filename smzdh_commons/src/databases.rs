@@ -7,13 +7,23 @@ use rustc_serialize::json::{ToJson, Json};
 use std::collections::BTreeMap;
 
 bitflags! {
-    pub flags UserFlag: u32 {
-        const VERIFY_EMAIL       = 0b00000001,
+    pub flags UserFlag: i32 {
+        const VERIFY_EMAIL       = 0b1,
     }
+}
+
+pub fn test() {
+    if UserFlag::from_bits_truncate(1).contains(VERIFY_EMAIL) {
+        info!("verify email");
+    } else {
+        info!("not verify email")
+    }
+
 }
 
 pub struct User {
     pub id:i32,
+    pub email:String,
     pub username:String,
     pub password:String,
     pub salt:String,
@@ -103,15 +113,17 @@ pub fn create_user(conn:&Connection,name:&str,pass:&str) -> ::postgres::Result<u
 }
 
 pub fn find_user(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
-    conn.query("SELECT id,username,password,salt,created FROM users WHERE username = $1",
+    conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE username = $1",
                &[&name]).map(|rows| {
                    rows.iter().next().map(|row| {
                        User {
-                           id:row.get(0),
-                           username:row.get(1),
-                           password:row.get(2),
-                           salt:row.get(3),
-                           created:row.get(4),
+                           id:row.get("id"),
+                           email:row.get("email"),
+                           username:row.get("username"),
+                           password:row.get("password"),
+                           salt:row.get("salt"),
+                           flags:row.get("flags"),
+                           created:row.get("created"),
                        }
                    })
                })
@@ -124,7 +136,7 @@ pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
 }
 
 pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error> {
-    conn.query("SELECT id,title,content,author,created FROM posts WHERE id = $1",
+    conn.query("SELECT id,title,content,author,flags,created FROM posts WHERE id = $1",
                &[&id]).map(|rows| {
                    rows.iter().next().map(|row| {
                        Post {
@@ -132,7 +144,8 @@ pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error>
                            title:row.get(1),
                            content:row.get(2),
                            author:row.get(3),
-                           created:row.get(4),
+                           flags:row.get(4),
+                           created:row.get(5),
                        }
                    })
                })
@@ -141,7 +154,7 @@ pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error>
 
 pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>)
                  -> Result<Vec<Post>,pe::Error> {
-    conn.query("SELECT id,title,content,author,created FROM posts OFFSET $1 LIMIT $2",
+    conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
                &[&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
                    rows.iter().map(|row| {
                        Post {
@@ -149,7 +162,8 @@ pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>)
                            title:row.get(1),
                            content:row.get(2),
                            author:row.get(3),
-                           created:row.get(4),
+                           flags:row.get(4),
+                           created:row.get(5),
                        }
                    }).collect()
                })
@@ -164,7 +178,7 @@ conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
 pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
                               ,limit:Option<i64>)
                               -> Result<Vec<Comment>,pe::Error> {
-    conn.query("SELECT id,comment,author,post_id,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
+    conn.query("SELECT id,comment,author,post_id,flags,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
                &[&post_id,&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
                    rows.iter().map(|row| {
                        Comment {
@@ -172,7 +186,8 @@ pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
                            content:row.get(1),
                            author:row.get(2),
                            post_id:row.get(3),
-                           created:row.get(4)
+                           flags:row.get(4),
+                           created:row.get(5)
                        }
                    }).collect()
                })

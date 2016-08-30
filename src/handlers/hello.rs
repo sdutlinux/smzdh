@@ -30,6 +30,7 @@ pub fn postgres_handler(_: &mut Request) -> IronResult<Response> {
 pub fn test(_: &mut Request) -> IronResult<Response> {
     let mut response = JsonResponse::new();
     response.set_result("pong");
+    ::smzdh_commons::databases::test();
     success_json_response(&response)
 }
 
