@@ -29,6 +29,34 @@ macro_rules! jget {
 }
 
 #[macro_export]
+macro_rules! check {
+    ($check:expr) => (check!($check,$crate::errors::BError::Forbidden));
+    ($check:expr,$error:expr) => (
+        if $check {} else {
+            return ::std::result::Result::Ok(
+                ::iron::response::Response::with(
+                    $error.to_response(None)
+                ));
+        }
+    );
+    ($check:expr,$error:expr,g) => (check!($check,
+                                           $crate::errors::BError::Forbidden,
+                                           $error));
+    ($check:expr,$error:expr,$desc:expr) => (
+        if $check {} else {
+            return ::std::result::Result::Ok(
+                ::iron::response::Response::with(
+                    $error.to_response(
+                        ::std::option::Option::Some(
+                            ::std::string::String::from($desc)
+                        )
+                    )
+                ));
+        }
+    );
+}
+
+#[macro_export]
 macro_rules! stry {
     ($result:expr) => (stry!($result, $crate::errors::SError::InternalServerError));
 
@@ -40,6 +68,9 @@ macro_rules! stry {
                 $modifier.into_iron_error(None));
         }
     });
+    ($result:expr,$modifier:expr, g) => (stry!($result,
+                                               $crate::errors::SError::InternalServerError,
+                                               $modifier));
     ($result:expr,$modifier:expr,$desc:expr) => (match $result {
         ::std::result::Result::Ok(x) => x,
         ::std::result::Result::Err(err) => {
@@ -68,6 +99,9 @@ macro_rules! sexpect {
                 ));
         },
     };);
+    ($option:expr,$modifier:expr, g) => (sexpect!($option,
+                                                  $crate::errors::SError::ParamsError,
+                                                  $modifier));
     ($option:expr,$modifier:expr,$desc:expr) => (match $option {
         ::std::option::Option::Some(x) => x,
         ::std::option::Option::None => {
@@ -91,7 +125,7 @@ macro_rules! rconn {
         let $v = match $crate::scredis::redis_conn() {
             ::std::result::Result::Ok(c) => c,
             ::std::result::Result::Err(e) => {
-                info!("{:?}",e);
+                info!("redis conn error {:?}",e);
                 return ::std::result::Result::Err(
                     $crate::errors::SError::InternalServerError.into_iron_error(
                         None
@@ -108,7 +142,7 @@ macro_rules! pconn {
         let $v = match $crate::databases::conn() {
             ::std::result::Result::Ok(c) => c,
             ::std::result::Result::Err(e) => {
-                info!("{:?}",e);
+                info!("postgresql conn error {:?}",e);
                 return ::std::result::Result::Err(
                     $crate::errors::SError::InternalServerError.into_iron_error(
                         None

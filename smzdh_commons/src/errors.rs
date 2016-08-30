@@ -68,6 +68,7 @@ impl SError {
 pub enum BError {
     UserNotLogin,
     LoginFail,
+    Forbidden,
 }
 
 impl Display for BError {
@@ -81,6 +82,7 @@ impl StdError for BError {
         match *self {
             BError::UserNotLogin => "用户未登陆",
             BError::LoginFail => "登陆失败",
+            BError::Forbidden => "未授权",
         }
     }
 }
@@ -88,7 +90,8 @@ impl StdError for BError {
 impl BError {
     pub fn to_response(&self,desc:Option<String>) -> (Status,Header<ContentType>,String) {
         let status = match * self {
-            BError::UserNotLogin | BError::LoginFail => status::BadRequest,
+            BError::LoginFail => status::BadRequest,
+            BError::UserNotLogin | BError::Forbidden  => status::Forbidden,
         };
         let mut response = headers::JsonResponse::new();
         match desc {

@@ -1,10 +1,12 @@
 use postgres::error as pe;
 use postgres::{Connection, SslMode};
+use postgres::rows::Row;
 use super::config;
 use super::utils;
 use chrono::*;
 use rustc_serialize::json::{ToJson, Json};
 use std::collections::BTreeMap;
+use std::marker::Sized;
 
 bitflags! {
     pub flags UserFlag: i32 {
@@ -21,6 +23,10 @@ pub fn test() {
 
 }
 
+trait FromRow {
+    fn from_row(row:Row) -> Option<Self> where Self:Sized;
+}
+
 pub struct User {
     pub id:i32,
     pub email:String,
@@ -29,6 +35,25 @@ pub struct User {
     pub salt:String,
     pub flags:i64,
     pub created:DateTime<Local>,
+}
+
+impl FromRow for User {
+    fn from_row(row:Row) -> Option<Self>
+        where Self:Sized {
+        if row.is_empty() {
+            None
+        } else {
+            Some(User {
+                id:row.get("id"),
+                email:row.get("email"),
+                username:row.get("username"),
+                password:row.get("password"),
+                salt:row.get("salt"),
+                flags:row.get("flags"),
+                created:row.get("created"),
+            })
+        }
+    }
 }
 
 impl ToJson for User {
@@ -49,6 +74,24 @@ pub struct Post {
     pub author:i32,
     pub flags:i64,
     pub created:DateTime<Local>,
+}
+
+impl FromRow for Post {
+    fn from_row(row:Row) -> Option<Self>
+        where Self:Sized {
+        if row.is_empty() {
+            None
+        } else {
+            Some(Post {
+                id:row.get("id"),
+                title:row.get("title"),
+                content:row.get("content"),
+                author:row.get("author"),
+                flags:row.get("flags"),
+                created:row.get("created"),
+            })
+        }
+    }
 }
 
 impl ToJson for Post {
@@ -85,6 +128,24 @@ pub struct Comment {
     pub created:DateTime<Local>,
 }
 
+impl FromRow for Comment {
+    fn from_row(row:Row) -> Option<Self>
+        where Self:Sized {
+        if row.is_empty() {
+            None
+        } else {
+            Some(Comment {
+                id:row.get("id"),
+                content:row.get("content"),
+                author:row.get("author"),
+                post_id:row.get("post_id"),
+                flags:row.get("flags"),
+                created:row.get("created"),
+            })
+        }
+    }
+}
+
 impl ToJson for Comment {
     fn to_json(&self) -> Json {
         let mut tmp = BTreeMap::new();
@@ -106,15 +167,24 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
     create_conn(config::URL)
 }
 
-pub fn create_user(conn:&Connection,name:&str,pass:&str) -> ::postgres::Result<u64> {
+pub fn create_user(conn:&Connection,email:&str,name:&str,pass:&str) -> ::postgres::Result<u64> {
     let (ep,salt) = utils::sha_encrypt(pass);
-    conn.execute("INSERT INTO users (username,password,salt) VALUES ($1,$2,$3)",
-                 &[&name,&ep,&salt])
+    conn.execute("INSERT INTO users (email,username,password,salt) VALUES ($1,$2,$3,$4)",
+                 &[&email,&name,&ep,&salt])
 }
 
-pub fn find_user(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
+pub fn find_user_by_username(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE username = $1",
                &[&name]).map(|rows| {
+                   rows.iter().next().and_then(|row| {
+                       User::from_row(row)
+                   })
+               })
+}
+
+pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error> {
+    conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE id = $1",
+               &[&id]).map(|rows| {
                    rows.iter().next().map(|row| {
                        User {
                            id:row.get("id"),

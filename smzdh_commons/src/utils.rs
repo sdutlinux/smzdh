@@ -7,6 +7,7 @@ use rustc_serialize::base64::{STANDARD,ToBase64,FromBase64};
 use rand::{ Rng, OsRng };
 use iron::Url;
 
+
 pub fn sha_encrypt(pass:&str) -> (String,String) {
 
     let mut rng = OsRng::new().ok().unwrap();

@@ -11,28 +11,30 @@ use smzdh_commons::middleware::{Json,Cookies};
 use smzdh_commons::databases;
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
-    let object = sexpect!(sexpect!(req.extensions.get::<Json>(),
-                                   SError::ParamsError,
-                                   "body 必须是 Json.").as_object(),
-                          SError::ParamsError,
-                          "Json 格式错误。");
+    let object = sexpect!(
+        sexpect!(req.extensions.get::<Json>(),
+                 "body 必须是 Json.",g).as_object(),
+        "Json 格式错误。",g);
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
+    let email = jget!(object,"email",as_string);
     pconn!(pc);
-    stry!(databases::create_user(&pc,username,password));
+    stry!(databases::create_user(&pc,email,username,password));
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
 pub fn signin(req:&mut Request) -> IronResult<Response> {
-    let object = sexpect!(sexpect!(req.extensions.get::<Json>(),
-                                   SError::ParamsError,
-                                   "body 必须是 Json.").as_object(),
-                          SError::ParamsError,
-                          "Json 格式错误。");
+    if req.extensions.get::<Cookies>().is_some() {
+        return headers::success_json_response(&headers::JsonResponse::new());
+    }
+    let object = sexpect!(
+        sexpect!(req.extensions.get::<Json>(),
+                 "body 必须是 Json.",g).as_object(),
+        "Json 格式错误。",g);
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
     pconn!(pc);
-    let user =  sexpect!(stry!(databases::find_user(&pc,username)),
+    let user =  sexpect!(stry!(databases::find_user_by_username(&pc,username)),
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",username);
