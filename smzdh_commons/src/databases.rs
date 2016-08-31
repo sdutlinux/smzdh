@@ -27,6 +27,58 @@ trait FromRow {
     fn from_row(row:Row) -> Option<Self> where Self:Sized;
 }
 
+trait Keys {
+    fn keys() -> Vec<&'static str>;
+}
+
+macro_rules! db_struct {
+    ($(#[$attr:meta])* $s:ident $sdb:ident {$(pub $k:ident:$v:ty),+ }) =>(
+        #[derive(Debug)]
+        $(#[$attr])*
+        pub struct $s {
+            $(pub $k:$v),+
+        }
+
+        #[derive(Default,Debug)]
+        $(#[$attr])*
+        pub struct $sdb {
+            $(pub $k:Option<$v>),+
+        }
+
+        impl FromRow for $s {
+            fn from_row(row:Row) -> Option<Self>
+                where Self:Sized {
+                if row.is_empty() {
+                    None
+                } else {
+                    Some($s {
+                        $($k:row.get(stringify!($k))),+
+                    })
+                }
+            }
+        }
+
+        impl Keys for $sdb {
+            fn keys() -> Vec<&'static str> {
+                vec![$(stringify!($k)),+]
+            }
+        }
+    );
+}
+
+db_struct! {
+    User UserDb {
+        pub id:i32,
+        pub email:String,
+        pub username:String,
+        pub password:String,
+        pub salt:String,
+        pub flags:i64,
+        pub created:DateTime<Local>
+    }
+}
+
+/*
 pub struct User {
     pub id:i32,
     pub email:String,
@@ -55,6 +107,7 @@ impl FromRow for User {
         }
     }
 }
+*/
 
 impl ToJson for User {
     fn to_json(&self) -> Json {
@@ -199,6 +252,11 @@ pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error
                })
 }
 
+/*
+pub fn update_user(conn:&Connection,flags:i64) {
+    conn.execute("")
+}
+*/
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
                    -> ::postgres::Result<u64> {
     conn.execute("INSERT INTO posts (title,content,author) VALUES ($1,$2,$3)",

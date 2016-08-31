@@ -31,25 +31,25 @@ fn init_log() {
 pub fn run() {
     init_log();
     let mut router = Router::new();
-    router.get("/ping", hello::test);
-    router.get("/hello/redis", hello::redis_handler);
-    router.get("/hello/postgres", hello::postgres_handler);
+    router.get("/ping", hello::test,"ping");
+    router.get("/hello/redis", hello::redis_handler,"redis");
+    router.get("/hello/postgres", hello::postgres_handler,"postgresql");
 
-    router.post("/signup", api::users::signup);
-    router.post("/signin", api::users::signin);
-    router.get("/logout", api::users::logout);
-    router.get("/user/:id",hello::test);
-    router.get("/verify_email/:token",hello::test);
+    router.post("/signup", api::users::signup,"signup");
+    router.post("/signin", api::users::signin,"signin");
+    router.get("/logout", api::users::logout,"logout");
+    router.get("/user/:id",hello::test,"user info");
+    router.get("/verify_email/:token",hello::test,"verify email");
 
-    router.get("/post",api::posts::posts_list);
-    router.post("/post",api::posts::create_post);
-    router.get("/post/:id",api::posts::get_post_by_id);
+    router.get("/post",api::posts::posts_list,"get post list");
+    router.post("/post",api::posts::create_post,"create post");
+    router.get("/post/:id",api::posts::get_post_by_id,"get post by id");
 
-    router.get("/comment",api::comments::get_comments_by_post_id);
-    router.post("/comment",api::comments::create_comment);
+    router.get("/comment",api::comments::get_comments_by_post_id,"get comment");
+    router.post("/comment",api::comments::create_comment,"create comment");
 
 
-    router.get("/error",hello::error_test);
+    router.get("/error",hello::error_test,"hh");
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Cookies);
     chain.link_before(middleware::Json);
