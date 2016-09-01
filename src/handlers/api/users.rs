@@ -106,7 +106,7 @@ pub fn verify_email(req:&mut Request) -> IronResult<Response> {
     );
     rconn!(rc);
     pconn!(pc);
-    let uid:i32 = stry!(rc.get(token));
+    let uid = sexpect!(stry!(rc.get(token)),"token 无效。",g);
     let user = sexpect!(stry!(databases::find_user_by_id(&pc,uid)));
     stry!(databases::update_user_by_uid(
         &pc,
