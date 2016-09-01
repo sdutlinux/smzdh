@@ -258,7 +258,6 @@ pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error
 
 pub fn update_user_by_uid(conn:&Connection,ud:UserDb,uid:i32) -> ::postgres::Result<u64> {
     let update_data:BTreeMap<&str,&ToSql> = ud.has();
-    info!("{:?}",update_data);
     if update_data.is_empty() { Ok(0) } else {
         let update_field = update_data.keys()
             .filter(|&&x| {

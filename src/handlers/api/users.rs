@@ -29,7 +29,7 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let token = utils::gen_string(8);
     stry!(rc.set_ex(&token,user.id,86400));
-    email::send_email(&token,&[username]);
+    email::send_email(&token,&[email]);
     headers::success_json_response(&headers::JsonResponse::new())
 }
 

@@ -8,8 +8,6 @@ use chrono::offset::local::Local;
 
 use std::env;
 
-
-
 fn init_log() {
     let format = |record: &LogRecord| {
         format!("[{}] [{}] [{}] - {}", record.level(),
