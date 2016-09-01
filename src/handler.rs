@@ -30,8 +30,8 @@ pub fn run() {
     init_log();
     let mut router = Router::new();
     router.get("/ping", hello::test,"ping");
-    router.get("/hello/redis", hello::redis_handler,"redis");
-    router.get("/hello/postgres", hello::postgres_handler,"postgresql");
+    //router.get("/hello/redis", hello::redis_handler,"redis");
+    //router.get("/hello/postgres", hello::postgres_handler,"postgresql");
 
     router.post("/signup", api::users::signup,"signup");
     router.post("/signin", api::users::signin,"signin");

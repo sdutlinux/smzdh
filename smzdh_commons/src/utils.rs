@@ -7,6 +7,8 @@ use rustc_serialize::base64::{STANDARD,ToBase64,FromBase64};
 use rand::{ self, Rng, OsRng };
 use iron::Url;
 
+pub static CURRENT_SITE:&'static str =  "localhost";
+
 pub fn gen_string(len:usize) -> String {
     rand::thread_rng()
         .gen_ascii_chars()

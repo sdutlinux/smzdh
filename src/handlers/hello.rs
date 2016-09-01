@@ -7,6 +7,7 @@ use redis;
 use smzdh_commons::headers::{JsonResponse,success_json_response};
 use smzdh_commons::errors::SError;
 
+#[allow(dead_code)]
 pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     let query = req.extensions.get::<Router>().unwrap().find("query").unwrap_or("/");
     let _ = scredis::redis_conn().map(|c| {
@@ -15,6 +16,7 @@ pub fn redis_handler(req: &mut Request) -> IronResult<Response> {
     Ok(Response::with((status::Ok, query)))
 }
 
+#[allow(dead_code)]
 pub fn postgres_handler(_: &mut Request) -> IronResult<Response> {
     pconn!(pc);
     let result = stry!(pc.query("SELECT * from users;", &[]));
@@ -30,7 +32,6 @@ pub fn postgres_handler(_: &mut Request) -> IronResult<Response> {
 pub fn test(_: &mut Request) -> IronResult<Response> {
     let mut response = JsonResponse::new();
     response.set_result("pong");
-    ::smzdh_commons::databases::test();
     success_json_response(&response)
 }
 

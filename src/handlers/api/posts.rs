@@ -26,14 +26,15 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
                        BError::UserNotLogin);
     let id = stry!(
         sexpect!(
-            req.extensions.get::<Router>().and_then(|x| x.find("id")),
-            SError::ParamsError,"未传入 id 参数。"
+            req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
+            SError::ParamsError,"未传入 post_id 参数。"
         ).parse::<i32>(),
-        SError::ParamsError,"id 格式错误。");
+        SError::ParamsError,"post_id 格式错误。");
     pconn!(pc);
     let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)));
+    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)),
+                        BError::ResourceNotFound,"Post 不存在。");
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(post.to_json());
     headers::success_json_response(&response)

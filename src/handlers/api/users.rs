@@ -7,7 +7,7 @@ use rustc_serialize::base64::{STANDARD,ToBase64};
 use rustc_serialize::json::{ToJson};
 
 use smzdh_commons::headers;
-use smzdh_commons::utils;
+use smzdh_commons::utils::{self,CURRENT_SITE};
 use smzdh_commons::email;
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::middleware::{Json,Cookies};
@@ -29,22 +29,10 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let token = utils::gen_string(8);
     stry!(rc.set_ex(&token,user.id,86400));
-    email::send_email(&token,&[email]);
+    email::send_email(&(format!("{}/verify_email/{}",CURRENT_SITE,token)),&[email]);
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
-/*
-pub fn verify_email(req:&mut Request) -> IronResult<Response> {
-    let token = let id = sexpect!(
-        req.extensions.get::<Router>().and_then(|x| x.find("token")),
-        "未传入 token 参数。",g
-    );
-    rconn!(rc);
-    let o_id:Option<i32> = stry!(rc.get(token));
-    let id = sexpect!(o_id,"token 无效。",g);
-
-}
-*/
 pub fn signin(req:&mut Request) -> IronResult<Response> {
     if req.extensions.get::<Cookies>().is_some() {
         return headers::success_json_response(&headers::JsonResponse::new());
