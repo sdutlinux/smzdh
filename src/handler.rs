@@ -38,12 +38,12 @@ pub fn run() {
     router.post("/signup", api::users::signup,"signup");
     router.post("/signin", api::users::signin,"signin");
     router.get("/logout", api::users::logout,"logout");
-    router.get("/user/:id",hello::test,"user info");
-    router.get("/verify_email/:token",hello::test,"verify email");
+    router.get("/user/:user_id",api::users::fetch,"user info");
+    router.get("/verify_email/:token",api::users::verify_email,"verify email");
 
     router.get("/post",api::posts::posts_list,"get post list");
     router.post("/post",api::posts::create_post,"create post");
-    router.get("/post/:id",api::posts::get_post_by_id,"get post by id");
+    router.get("/post/:post_id",api::posts::get_post_by_id,"get post by id");
 
     router.get("/comment",api::comments::get_comments_by_post_id,"get comment");
     router.post("/comment",api::comments::create_comment,"create comment");

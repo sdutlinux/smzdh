@@ -1,14 +1,19 @@
 use iron::prelude::*;
 use iron::headers::{SetCookie,CookiePair};
+use router::Router;
 use rand::{ Rng, OsRng };
 use redis::Commands;
 use rustc_serialize::base64::{STANDARD,ToBase64};
+use rustc_serialize::json::{ToJson};
 
 use smzdh_commons::headers;
 use smzdh_commons::utils;
+use smzdh_commons::email;
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::middleware::{Json,Cookies};
-use smzdh_commons::databases;
+use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL};
+
+use std::default::Default;
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
     let object = sexpect!(
@@ -20,6 +25,11 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     let email = jget!(object,"email",as_string);
     pconn!(pc);
     stry!(databases::create_user(&pc,email,username,password));
+    let user = sexpect!(stry!(databases::find_user_by_username(&pc,username)));
+    rconn!(rc);
+    let token = utils::gen_string(8);
+    stry!(rc.set_ex(&token,user.id,86400));
+    email::send_email(&token,&[username]);
     headers::success_json_response(&headers::JsonResponse::new())
 }
 
@@ -67,6 +77,50 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     } else {
         Ok(Response::with(SError::Test.to_response(Some("登陆失败".to_string()))))
     }
+}
+
+pub fn fetch(req:&mut Request) -> IronResult<Response> {
+    let uid = sexpect!(req.extensions.get::<Cookies>(),
+                       BError::UserNotLogin);
+    let id = stry!(
+        sexpect!(
+            req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
+            SError::ParamsError,"未传入 user_id 参数。"
+        ).parse::<i32>(),
+        SError::ParamsError,"id 格式错误。");
+    if id == *uid {
+        pconn!(pc);
+        let user = sexpect!(stry!(databases::find_user_by_id(&pc,id)));
+        let mut response = headers::JsonResponse::new();
+        response.move_from_btmap(user.to_json());
+        headers::success_json_response(&response)
+    } else {
+        headers::sjer()
+    }
+}
+
+pub fn verify_email(req:&mut Request) -> IronResult<Response> {
+    let token = sexpect!(
+        req.extensions.get::<Router>().and_then(|x| x.find("token")),
+        SError::ParamsError,"未传入 token 参数。"
+    );
+    rconn!(rc);
+    pconn!(pc);
+    let uid:i32 = stry!(rc.get(token));
+    let user = sexpect!(stry!(databases::find_user_by_id(&pc,uid)));
+    stry!(databases::update_user_by_uid(
+        &pc,
+        databases::UserDb {
+            flags:Some(
+                {
+                    let mut uf =  UserFlag::from_bits_truncate(user.flags as i64);
+                    uf.insert(VERIFY_EMAIL);
+                    uf.bits()
+                }
+            ),..Default::default()
+        },
+        uid));
+    headers::sjer()
 }
 
 pub fn logout(req:&mut Request) -> IronResult<Response> {

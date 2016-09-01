@@ -1,6 +1,7 @@
 use postgres::error as pe;
 use postgres::{Connection, SslMode};
 use postgres::rows::Row;
+use postgres::types::ToSql;
 use super::config;
 use super::utils;
 use chrono::*;
@@ -9,7 +10,7 @@ use std::collections::BTreeMap;
 use std::marker::Sized;
 
 bitflags! {
-    pub flags UserFlag: i32 {
+    pub flags UserFlag: i64 {
         const VERIFY_EMAIL       = 0b1,
     }
 }
@@ -27,8 +28,8 @@ trait FromRow {
     fn from_row(row:Row) -> Option<Self> where Self:Sized;
 }
 
-trait Keys {
-    fn keys() -> Vec<&'static str>;
+trait Has {
+    fn has(&self) -> BTreeMap<&str,&ToSql>;
 }
 
 macro_rules! db_struct {
@@ -58,9 +59,13 @@ macro_rules! db_struct {
             }
         }
 
-        impl Keys for $sdb {
-            fn keys() -> Vec<&'static str> {
-                vec![$(stringify!($k)),+]
+        impl Has for $sdb {
+            fn has(&self) -> BTreeMap<&str,&ToSql> {
+                let mut tmp = BTreeMap::new();
+                $(if self.$k.is_some() {
+                    tmp.insert(stringify!($k),&self.$k as &ToSql);
+                })+
+                tmp
             }
         }
     );
@@ -112,8 +117,14 @@ impl FromRow for User {
 impl ToJson for User {
     fn to_json(&self) -> Json {
         let mut tmp = BTreeMap::new();
+        let mut flags = vec![];
+        if UserFlag::from_bits_truncate(self.flags).contains(VERIFY_EMAIL) {
+            flags.push(Json::String(String::from("verify_email")));
+        }
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("email"),Json::String(self.email.clone()));
         tmp.insert(String::from("usename"),Json::String(self.username.clone()));
+        tmp.insert(String::from("flags"),Json::Array(flags));
         tmp.insert(String::from("created"),Json::String(
             self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
         Json::Object(tmp)
@@ -238,25 +249,29 @@ pub fn find_user_by_username(conn:&Connection,name:&str) -> Result<Option<User>,
 pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE id = $1",
                &[&id]).map(|rows| {
-                   rows.iter().next().map(|row| {
-                       User {
-                           id:row.get("id"),
-                           email:row.get("email"),
-                           username:row.get("username"),
-                           password:row.get("password"),
-                           salt:row.get("salt"),
-                           flags:row.get("flags"),
-                           created:row.get("created"),
-                       }
+                   rows.iter().next().and_then(|row| {
+                       User::from_row(row)
                    })
                })
 }
 
-/*
-pub fn update_user(conn:&Connection,flags:i64) {
-    conn.execute("")
+
+pub fn update_user_by_uid(conn:&Connection,ud:UserDb,uid:i32) -> ::postgres::Result<u64> {
+    let update_data:BTreeMap<&str,&ToSql> = ud.has();
+    info!("{:?}",update_data);
+    if update_data.is_empty() { Ok(0) } else {
+        let update_field = update_data.keys()
+            .filter(|&&x| {
+                x.ne("id")
+            })
+            .enumerate().map(|(index,v)| {
+            format!("{}=${}",v,index+1)
+        }).collect::<Vec<String>>().join(",");
+        let update_value = update_data.values().cloned().collect::<Vec<&ToSql>>();
+        conn.execute(&*format!("UPDATE users SET {} where id = {}",update_field,uid),&update_value)
+    }
 }
-*/
+
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
                    -> ::postgres::Result<u64> {
     conn.execute("INSERT INTO posts (title,content,author) VALUES ($1,$2,$3)",

@@ -4,9 +4,15 @@ use crypto::{ symmetriccipher, buffer, aes, blockmodes };
 use crypto::buffer::{ ReadBuffer, WriteBuffer, BufferResult };
 use rustc_serialize::hex::ToHex;
 use rustc_serialize::base64::{STANDARD,ToBase64,FromBase64};
-use rand::{ Rng, OsRng };
+use rand::{ self, Rng, OsRng };
 use iron::Url;
 
+pub fn gen_string(len:usize) -> String {
+    rand::thread_rng()
+        .gen_ascii_chars()
+        .take(len)
+        .collect::<String>()
+}
 
 pub fn sha_encrypt(pass:&str) -> (String,String) {
 

@@ -95,3 +95,7 @@ pub fn success_json_response(jr:&JsonResponse) -> IronResult<Response> {
         json::encode(&jr.data).unwrap_or_else(|_| {String::new()}),
     )))
 }
+
+pub fn sjer() -> IronResult<Response> {
+    success_json_response(&JsonResponse::new())
+}
