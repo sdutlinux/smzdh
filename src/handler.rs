@@ -45,9 +45,8 @@ pub fn run() {
 
     router.get("/comment",api::comments::get_comments_by_post_id,"get comment");
     router.post("/comment",api::comments::create_comment,"create comment");
-
-
     router.get("/error",hello::error_test,"hh");
+
     let mut chain = Chain::new(router);
     chain.link_before(middleware::Cookies);
     chain.link_before(middleware::Json);
