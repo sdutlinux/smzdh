@@ -15,11 +15,8 @@ rand = "*"
 redis = "*"
 clippy = "*"
 env_logger = "*"
-chrono = "*"
-
-[dependencies.nom]
-version = "*"
-features = ["regexp","regexp_macros"]
+chrono = { version = "*", features = ["rustc-serialize"] }
+nom = { version = "*", features = ["regexp","regexp_macros"] }
 
 [dependencies.smzdh_commons]
 version = "*"

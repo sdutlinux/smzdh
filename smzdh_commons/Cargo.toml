@@ -12,12 +12,10 @@ log = "*"
 rand = "*"
 router = "*"
 clippy = "*"
-chrono = "*"
+chrono = { version = "*", features = ["rustc-serialize"] }
 url = "*"
 plugin = "*"
 hyper = "*"
 bitflags = "*"
-
-[dependencies.postgres]
-version = "*"
-features = ["rustc-serialize","chrono"]
+bincode = {version = "*", features = ["rustc-serialize"]}
+postgres = {version = "*", features = ["rustc-serialize","chrono"]}

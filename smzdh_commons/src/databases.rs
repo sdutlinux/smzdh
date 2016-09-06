@@ -8,6 +8,8 @@ use chrono::*;
 use rustc_serialize::json::{ToJson, Json};
 use std::collections::BTreeMap;
 use std::marker::Sized;
+use bincode::SizeLimit;
+use bincode::rustc_serialize::{encode, decode,EncodingResult,DecodingResult};
 
 bitflags! {
     pub flags UserFlag: i64 {
@@ -32,15 +34,21 @@ trait Has {
     fn has(&self) -> BTreeMap<&str,&ToSql>;
 }
 
+pub trait CanCache {
+    fn to_bit(&self) -> EncodingResult<Vec<u8>>;
+    fn from_bit(data:&[u8]) -> DecodingResult<Self> where Self:Sized;
+
+}
+
 macro_rules! db_struct {
     ($(#[$attr:meta])* $s:ident $sdb:ident {$(pub $k:ident:$v:ty),+ }) =>(
-        #[derive(Debug)]
+        #[derive(Debug,RustcDecodable, RustcEncodable)]
         $(#[$attr])*
             pub struct $s {
                 $(pub $k:$v),+
             }
 
-        #[derive(Default,Debug)]
+        #[derive(Default,Debug,RustcDecodable, RustcEncodable)]
         $(#[$attr])*
             pub struct $sdb {
                 $(pub $k:Option<$v>),+
@@ -65,7 +73,17 @@ macro_rules! db_struct {
                 $(if self.$k.is_some() {
                     tmp.insert(stringify!($k),&self.$k as &ToSql);
                 });+
-                tmp
+                    tmp
+            }
+        }
+
+        impl CanCache for $s {
+            fn to_bit(&self) -> EncodingResult<Vec<u8>> {
+                encode(self, SizeLimit::Infinite)
+            }
+
+            fn from_bit(data:&[u8]) -> DecodingResult<Self> {
+                decode(data)
             }
         }
     );
@@ -83,6 +101,7 @@ db_struct! {
     }
 }
 
+
 impl ToJson for User {
     fn to_json(&self) -> Json {
         let mut tmp = BTreeMap::new();
@@ -99,6 +118,7 @@ impl ToJson for User {
         Json::Object(tmp)
     }
 }
+
 db_struct!{
     Post PostDb {
         pub id:i32,

@@ -22,9 +22,9 @@ impl BeforeMiddleware for Cookies {
         let uid:i32;
         {
             let smzdh_user = match req.headers.get::<Cookie>().and_then(|cookies| {
-                cookies.iter().filter(|cookie| {
+                cookies.iter().find(|cookie| {
                     &*cookie.name == "smzdh_user"
-                }).next()
+                })
             }) {
                 Some(x) => x,
                 None => {return Ok(());},

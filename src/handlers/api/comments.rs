@@ -1,7 +1,7 @@
 use iron::prelude::*;
 use smzdh_commons::middleware::Cookies;
 use smzdh_commons::middleware::Json;
-use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL};
+use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::headers;
 use smzdh_commons::utils;
@@ -19,7 +19,9 @@ pub fn create_comment(req:&mut Request) -> IronResult<Response> {
     let post_id = jget!(object,"post_id",as_i64) as i32;
     let content = jget!(object,"content",as_string);
     pconn!(pc);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_comment(&pc,content,*uid,post_id));
     headers::success_json_response(&headers::JsonResponse::new())
@@ -33,7 +35,9 @@ pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
             .parse::<i32>(),
         SError::ParamsError,"post_id 应该为一个数字");
     pconn!(pc);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let comments = stry!(databases::get_comment_by_post_id(&pc,post_id,None,None));
     let mut response = headers::JsonResponse::new();

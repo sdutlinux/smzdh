@@ -1,6 +1,6 @@
 use iron::prelude::*;
 use router::Router;
-use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL};
+use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::headers;
 use smzdh_commons::middleware::Cookies;
@@ -11,7 +11,9 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
                        BError::UserNotLogin);
     pconn!(pc);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let posts = stry!(databases::post_list(&pc,None,None));
     let mut response = headers::JsonResponse::new();
@@ -31,7 +33,9 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
         ).parse::<i32>(),
         SError::ParamsError,"post_id 格式错误。");
     pconn!(pc);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)),
                         BError::ResourceNotFound,"Post 不存在。");
@@ -51,7 +55,9 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
     let title = jget!(object,"title",as_string);
     let content = jget!(object,"content",as_string);
     pconn!(pc);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,*uid)));
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_post(&pc,title,content,*uid));
     headers::success_json_response(&headers::JsonResponse::new())

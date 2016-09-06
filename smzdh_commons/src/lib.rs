@@ -16,6 +16,7 @@ extern crate chrono;
 extern crate url;
 extern crate plugin;
 extern crate hyper;
+extern crate bincode;
 
 #[macro_export]
 macro_rules! jget {
@@ -150,7 +151,26 @@ macro_rules! pconn {
                 );
             }
         };
-    )
+    );
+}
+
+#[macro_export]
+macro_rules! try_caching {
+    ($conn:expr,$key:expr,$data:expr) => (try_caching!($conn,$key,$data,172800));
+    ($conn:expr,$key:expr,$data:expr,$ex:expr) => (
+        {
+            let tmp:Option<Vec<u8>> = stry!(::redis::Commands::get(&$conn,$key));
+            match tmp {
+                Some(x) => stry!($crate::databases::CanCache::from_bit(&x)),
+                None => {
+                    info!("去数据库查了");
+                    let data = $data;
+                    stry!(::redis::Commands::set_ex(&$conn,$key,stry!(data.to_bit()),$ex));
+                    data
+                },
+            }
+        }
+    );
 }
 
 pub mod headers;
