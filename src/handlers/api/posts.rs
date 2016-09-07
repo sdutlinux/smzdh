@@ -3,6 +3,7 @@ use router::Router;
 use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::headers;
+use smzdh_commons::utils;
 use smzdh_commons::middleware::Cookies;
 use rustc_serialize::json::{self,ToJson};
 use smzdh_commons::middleware::Json;
@@ -10,16 +11,25 @@ use smzdh_commons::middleware::Json;
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
                        BError::UserNotLogin);
+    let ctg = utils::get_query_params(&req.url,"categroy");
+    let mut ctgi:Option<i32> = None;
+    if ctg.is_some() {
+        ctgi = ctg.and_then(|x| { x.parse::<i32>().ok() });
+        check!(ctgi.is_some(),SError::ParamsError,"category 格式错误");
+    }
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
                             sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let posts = stry!(databases::post_list(&pc,None,None));
+    let posts = stry!(databases::post_list(&pc,None,None,ctgi));
     let mut response = headers::JsonResponse::new();
-    response.insert("posts",&posts.into_iter().map(|x|
-                                                   {x.into_simple_json()}
-    ).collect::<Vec<json::Json>>());
+    response.insert(
+        "posts",
+        &posts.into_iter().map(
+            |x|
+            {x.into_simple_json()}
+        ).collect::<Vec<json::Json>>());
     headers::success_json_response(&response)
 }
 
@@ -29,9 +39,10 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     let id = stry!(
         sexpect!(
             req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
-            SError::ParamsError,"未传入 post_id 参数。"
+            "未传入 post_id 参数。",g
         ).parse::<i32>(),
-        SError::ParamsError,"post_id 格式错误。");
+        SError::ParamsError,
+        "post_id 格式错误。");
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
@@ -49,16 +60,18 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
                        BError::UserNotLogin);
     let object = sexpect!(
         sexpect!(req.extensions.get::<Json>(),
-                 SError::ParamsError,
-                 "body 必须是 Json.").as_object(),
+                 "body 必须是 Json.",g).as_object(),
         SError::ParamsError);
     let title = jget!(object,"title",as_string);
     let content = jget!(object,"content",as_string);
+    let category_id = jget!(object,"category_id",as_i64) as i32;
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+    let user = try_caching!(
+        rc,format!("user_{}",uid),
+        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+    );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    stry!(databases::create_post(&pc,title,content,*uid));
+    stry!(databases::create_post(&pc,title,content,*uid,category_id));
     headers::success_json_response(&headers::JsonResponse::new())
 }

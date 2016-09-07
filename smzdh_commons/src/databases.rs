@@ -11,6 +11,14 @@ use std::marker::Sized;
 use bincode::SizeLimit;
 use bincode::rustc_serialize::{encode, decode,EncodingResult,DecodingResult};
 
+fn create_conn(url:&str) -> Result<Connection,pe::ConnectError> {
+    Connection::connect(url,SslMode::None)
+}
+
+pub fn conn() -> Result<Connection,pe::ConnectError> {
+    create_conn(config::URL)
+}
+
 bitflags! {
     pub flags UserFlag: i64 {
         const VERIFY_EMAIL       = 0b1,
@@ -119,74 +127,6 @@ impl ToJson for User {
     }
 }
 
-db_struct!{
-    Post PostDb {
-        pub id:i32,
-        pub title:String,
-        pub content:String,
-        pub author:i32,
-        pub flags:i64,
-        pub created:DateTime<Local>
-    }
-}
-
-impl ToJson for Post {
-    fn to_json(&self) -> Json {
-        let mut tmp = BTreeMap::new();
-        tmp.insert(String::from("id"),Json::I64(self.id as i64));
-        tmp.insert(String::from("title"),Json::String(self.title.clone()));
-        tmp.insert(String::from("content"),Json::String(self.content.clone()));
-        tmp.insert(String::from("author"),Json::I64(self.author as i64));
-        tmp.insert(String::from("created"),Json::String(
-            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
-        Json::Object(tmp)
-    }
-}
-
-impl Post {
-    pub fn into_simple_json(self) -> Json {
-        let mut tmp = BTreeMap::new();
-        tmp.insert(String::from("id"),Json::I64(self.id as i64));
-        tmp.insert(String::from("title"),Json::String(self.title));
-        tmp.insert(String::from("author"),Json::I64(self.author as i64));
-        tmp.insert(String::from("created"),Json::String(
-            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
-        Json::Object(tmp)
-    }
-}
-
-db_struct!{
-    Comment CommentDb {
-        pub id:i32,
-        pub content:String,
-        pub author:i32,
-        pub post_id:i32,
-        pub flags:i64,
-        pub created:DateTime<Local>
-    }
-}
-
-impl ToJson for Comment {
-    fn to_json(&self) -> Json {
-        let mut tmp = BTreeMap::new();
-        tmp.insert(String::from("id"),Json::I64(self.id as i64));
-        tmp.insert(String::from("content"),Json::String(self.content.clone()));
-        tmp.insert(String::from("author"),Json::I64(self.author as i64));
-        tmp.insert(String::from("post_id"),Json::I64(self.id as i64));
-        tmp.insert(String::from("created"),Json::String(
-            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
-        Json::Object(tmp)
-    }
-}
-
-fn create_conn(url:&str) -> Result<Connection,pe::ConnectError> {
-    Connection::connect(url,SslMode::None)
-}
-
-pub fn conn() -> Result<Connection,pe::ConnectError> {
-    create_conn(config::URL)
-}
-
 pub fn create_user(conn:&Connection,email:&str,name:&str,pass:&str) -> ::postgres::Result<u64> {
     let (ep,salt) = utils::sha_encrypt(pass);
     conn.execute("INSERT INTO users (email,username,password,salt) VALUES ($1,$2,$3,$4)",
@@ -227,10 +167,58 @@ pub fn update_user_by_uid(conn:&Connection,ud:UserDb,uid:i32) -> ::postgres::Res
     }
 }
 
-pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32)
+db_struct!{
+    Post PostDb {
+        pub id:i32,
+        pub title:String,
+        pub content:String,
+        pub author:i32,
+        pub flags:i64,
+        pub created:DateTime<Local>
+    }
+}
+
+impl ToJson for Post {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title.clone()));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+
+impl Post {
+    pub fn into_simple_json(self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+
+pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32,category_id:i32)
                    -> ::postgres::Result<u64> {
-    conn.execute("INSERT INTO posts (title,content,author) VALUES ($1,$2,$3)",
-                 &[&title,&content,&author])
+    let prepare = try!(conn.prepare_cached(
+        "INSERT INTO posts (title,content,author) VALUES ($1,$2,$3) RETURNING id"
+    ));
+    let result = try!(prepare.query(&[&title,&content,&author]));
+    match result.iter().next() {
+        Some(x) => {
+            let post_id:i32 = x.get("id");
+            let ipp = try!(conn.prepare_cached(
+                "INSERT INTO post_category (post_id,category_id) VALUES ($1,$2)"
+            ));
+            ipp.execute(&[&post_id,&category_id])
+        },
+        None => unreachable!(),
+    }
 }
 
 pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error> {
@@ -243,14 +231,46 @@ pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error>
 }
 
 
-pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>)
+pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>,category_id:Option<i32>)
                  -> Result<Vec<Post>,pe::Error> {
-    conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
-               &[&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
-                   rows.iter().filter_map(|row| {
-                       Post::from_row(row)
-                   }).collect()
-               })
+    match category_id {
+        Some(x) => {
+            conn.query("SELECT id,content,author,flags,created FROM posts LEFT JOIN post_category ON posts.id = post_category.post_id WHERE post_category.category_id = $1 OFFSET $2 LIMIT $3",
+                       &[&x,&skip.unwrap_or(0),&limit.unwrap_or(20)])
+        },
+        None => {
+            conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
+                       &[&skip.unwrap_or(0),&limit.unwrap_or(20)])
+        }
+    }.map(|rows| {
+        rows.iter().filter_map(|row| {
+            Post::from_row(row)
+        }).collect()
+    })
+}
+
+db_struct!{
+    Comment CommentDb {
+        pub id:i32,
+        pub content:String,
+        pub author:i32,
+        pub post_id:i32,
+        pub flags:i64,
+        pub created:DateTime<Local>
+    }
+}
+
+impl ToJson for Comment {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("post_id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
 }
 
 pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
@@ -268,4 +288,22 @@ pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
                        Comment::from_row(row)
                    }).collect()
                })
+}
+
+
+db_struct!{
+    Category CategoryDb {
+        pub id:i32,
+        pub name:String,
+        pub desc:String,
+        pub flags:i64,
+        pub created:DateTime<Local>
+    }
+}
+
+struct PostCategory {
+    pub id:i32,
+    pub post_id:i32,
+    pub category_id:i32,
+    pub created:DateTime<Local>
 }
