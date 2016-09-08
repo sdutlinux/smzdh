@@ -24,7 +24,7 @@ pub fn create_comment(req:&mut Request) -> IronResult<Response> {
                             sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_comment(&pc,content,*uid,post_id));
-    headers::success_json_response(&headers::JsonResponse::new())
+    headers::sjer()
 }
 
 pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
@@ -34,12 +34,13 @@ pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
         sexpect!(utils::get_query_params(&req.url,"post_id"))
             .parse::<i32>(),
         SError::ParamsError,"post_id 应该为一个数字");
+    check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
                             sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let comments = stry!(databases::get_comment_by_post_id(&pc,post_id,None,None));
+    let comments = stry!(databases::get_comment_by_post_id(&pc,post_id,skip,limit));
     let mut response = headers::JsonResponse::new();
     response.insert("comments",&comments);
     headers::success_json_response(&response)

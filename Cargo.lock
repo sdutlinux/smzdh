@@ -3,7 +3,7 @@ name = "smzdh"
 version = "0.1.0"
 dependencies = [
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "clippy 0.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.9.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -69,15 +69,15 @@ dependencies = [
 
 [[package]]
 name = "clippy"
-version = "0.0.88"
+version = "0.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "clippy_lints 0.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy_lints 0.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "clippy_lints"
-version = "0.0.88"
+version = "0.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "matches 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -536,7 +536,7 @@ dependencies = [
  "bincode 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitflags 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "clippy 0.0.88 (registry+https://github.com/rust-lang/crates.io-index)",
+ "clippy 0.0.89 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.9.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -720,8 +720,8 @@ dependencies = [
 "checksum byteorder 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0fc10e8cc6b2580fda3f36eb6dc5316657f812a3df879a44a66fc9f0fdbc4855"
 "checksum cfg-if 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "de1e760d7b6535af4241fca8bd8adf68e2e7edacc6b29f5d399050c5e48cf88c"
 "checksum chrono 0.2.25 (registry+https://github.com/rust-lang/crates.io-index)" = "9213f7cd7c27e95c2b57c49f0e69b1ea65b27138da84a170133fd21b07659c00"
-"checksum clippy 0.0.88 (registry+https://github.com/rust-lang/crates.io-index)" = "6cc502e63a10b490d8b445c728cfba3ea778a38a14432cf392b132e655cdf029"
-"checksum clippy_lints 0.0.88 (registry+https://github.com/rust-lang/crates.io-index)" = "28e4d47b13273289faf3e7a0d10e93e9ad5226c21e133e2e38ed09ca44a879fb"
+"checksum clippy 0.0.89 (registry+https://github.com/rust-lang/crates.io-index)" = "b5908cd07f755e5caefddafd521cab32d2d079896ccb62468e12eeca77d0734d"
+"checksum clippy_lints 0.0.89 (registry+https://github.com/rust-lang/crates.io-index)" = "72c6c3f75eeed918a63cf9776ee5811bc2ca8260ff13f65ea2a0db14632880c9"
 "checksum conduit-mime-types 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)" = "95ca30253581af809925ef68c2641cc140d6183f43e12e0af4992d53768bd7b8"
 "checksum cookie 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "0e3d6405328b6edb412158b3b7710e2634e23f3614b9bb1c412df7952489a626"
 "checksum env_logger 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "82dcb9ceed3868a03b335657b85a159736c961900f7e7747d3b0b97b9ccb5ccb"

@@ -21,7 +21,8 @@ pub fn conn() -> Result<Connection,pe::ConnectError> {
 
 bitflags! {
     pub flags UserFlag: i64 {
-        const VERIFY_EMAIL       = 0b1,
+        const VERIFY_EMAIL       = 0x1,
+        const IS_ADMIN           = 0x2,
     }
 }
 
@@ -231,16 +232,16 @@ pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error>
 }
 
 
-pub fn post_list(conn:&Connection,skip:Option<i64>,limit:Option<i64>,category_id:Option<i32>)
+pub fn post_list(conn:&Connection,skip:i64,limit:i64,category_id:Option<i32>)
                  -> Result<Vec<Post>,pe::Error> {
     match category_id {
         Some(x) => {
             conn.query("SELECT id,content,author,flags,created FROM posts LEFT JOIN post_category ON posts.id = post_category.post_id WHERE post_category.category_id = $1 OFFSET $2 LIMIT $3",
-                       &[&x,&skip.unwrap_or(0),&limit.unwrap_or(20)])
+                       &[&x,&skip,&limit])
         },
         None => {
             conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
-                       &[&skip.unwrap_or(0),&limit.unwrap_or(20)])
+                       &[&skip,&limit])
         }
     }.map(|rows| {
         rows.iter().filter_map(|row| {
@@ -279,11 +280,11 @@ pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
                  &[&content,&author,&post_id])
 }
 
-pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:Option<i64>
-                              ,limit:Option<i64>)
+pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:i64
+                              ,limit:i64)
                               -> Result<Vec<Comment>,pe::Error> {
     conn.query("SELECT id,comment,author,post_id,flags,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
-               &[&post_id,&skip.unwrap_or(0),&limit.unwrap_or(20)]).map(|rows| {
+               &[&post_id,&skip,&limit]).map(|rows| {
                    rows.iter().filter_map(|row| {
                        Comment::from_row(row)
                    }).collect()
@@ -300,6 +301,51 @@ db_struct!{
         pub created:DateTime<Local>
     }
 }
+
+pub fn create_cagegory(conn:&Connection,name:&str,desc:&str) -> ::postgres::Result<u64> {
+    conn.execute("INSERT INTO category (name,desc) VALUES ($1,$2)",
+                 &[&name,&desc])
+}
+
+pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
+                    -> Result<Vec<Category>,pe::Error> {
+    conn.query("SELECT id,name,desc,flags,created FROM category OFFSET $1 LIMIT $2",
+               &[&skip,&limit]).map(|rows| {
+                   rows.iter().filter_map(|row| {
+                       Category::from_row(row)
+                   }).collect()
+               })
+}
+
+impl ToJson for Category {
+    fn to_json(&self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("name"),Json::String(self.name.clone()));
+        tmp.insert(String::from("desc"),Json::String(self.desc.clone()));
+        tmp.insert(String::from("flags"),Json::I64(self.flags as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+
+impl Category {
+    pub fn into_json(self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("name"),Json::String(self.name));
+        tmp.insert(String::from("desc"),Json::String(self.desc));
+        tmp.insert(String::from("flags"),Json::I64(self.flags as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        Json::Object(tmp)
+    }
+}
+
+
+
+
 
 struct PostCategory {
     pub id:i32,

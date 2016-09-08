@@ -45,6 +45,9 @@ pub fn run() {
 
     router.get("/comment",api::comments::get_comments_by_post_id,"get comment");
     router.post("/comment",api::comments::create_comment,"create comment");
+
+    router.post("/cagetory",api::category::create_category,"create category");
+    router.get("/cagetory",api::category::category_list,"category list");
     router.get("/error",hello::error_test,"hh");
 
     let mut chain = Chain::new(router);

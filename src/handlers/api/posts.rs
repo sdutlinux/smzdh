@@ -17,12 +17,15 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
         ctgi = ctg.and_then(|x| { x.parse::<i32>().ok() });
         check!(ctgi.is_some(),SError::ParamsError,"category 格式错误");
     }
+    check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+    let user = try_caching!(
+        rc,format!("user_{}",uid),
+        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+    );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let posts = stry!(databases::post_list(&pc,None,None,ctgi));
+    let posts = stry!(databases::post_list(&pc,skip,limit,ctgi));
     let mut response = headers::JsonResponse::new();
     response.insert(
         "posts",

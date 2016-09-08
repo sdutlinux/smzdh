@@ -68,6 +68,16 @@ pub fn get_query_params<'a>(params:&'a Url,key:&str) -> Option<&'a str> {
     }
 }
 
+pub fn skip_limit(url:&Url) -> (i64,i64) {
+    let skip = get_query_params(url,"skip").and_then(|x| {
+        x.parse::<i64>().ok()
+    }).unwrap_or(0);
+    let limit = get_query_params(url,"limit").and_then(|x| {
+        x.parse::<i64>().ok()
+    }).unwrap_or(20);
+    (skip,limit)
+}
+
 pub fn encrypt(data: &[u8], key: &[u8], iv: &[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     let mut encryptor = aes::cbc_encryptor(
         aes::KeySize::KeySize256,
