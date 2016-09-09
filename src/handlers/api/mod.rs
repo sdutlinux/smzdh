@@ -8,6 +8,20 @@ macro_rules! check_sl {
     )
 }
 
+macro_rules! self_user {
+    ($id:ident,$str_id:expr,$uid:expr) => (
+        let $id:i32;
+        if $str_id == "self" {
+            $id = $uid
+        } else {
+            $id = stry!(
+                $str_id.parse::<i32>(),
+                SError::ParamsError,"user_id 格式错误。"
+            )
+        }
+    )
+}
+
 pub mod users;
 pub mod posts;
 pub mod comments;

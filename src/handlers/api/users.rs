@@ -74,15 +74,7 @@ pub fn fetch(req:&mut Request) -> IronResult<Response> {
         req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
         SError::ParamsError,"未传入 user_id 参数。"
     );
-    let id:i32;
-    if id_str == "self" {
-        id = *uid
-    } else {
-        id = stry!(
-            id_str.parse::<i32>(),
-            SError::ParamsError,"id 格式错误。"
-        )
-    }
+    self_user!(id,id_str,*uid);
     check!(id==*uid);
     pconn!(pc);
     rconn!(rc);
