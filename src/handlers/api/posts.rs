@@ -51,8 +51,12 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     let user = try_caching!(rc,format!("user_{}",uid),
                             sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)),
-                        BError::ResourceNotFound,"Post 不存在。");
+    let post = try_caching!(
+        rc,format!("post_{}",id),
+        sexpect!(stry!(databases::get_post_by_id(&pc,id)
+                       ,BError::ResourceNotFound,"Post 不存在。")),
+        3600
+    );
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(post.to_json());
     headers::success_json_response(&response)
@@ -70,6 +74,11 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
     let category_id = jget!(object,"category_id",as_i64) as i32;
     pconn!(pc);
     rconn!(rc);
+    try_caching!(
+        rc,format!("category_{}",category_id),
+        sexpect!(stry!(databases::get_category_by_id(&pc,category_id)),
+                 BError::ResourceNotFound,"Category 不存在。")
+    );
     let user = try_caching!(
         rc,format!("user_{}",uid),
         sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))

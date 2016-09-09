@@ -118,6 +118,9 @@ impl ToJson for User {
         if UserFlag::from_bits_truncate(self.flags).contains(VERIFY_EMAIL) {
             flags.push(Json::String(String::from("verify_email")));
         }
+        if UserFlag::from_bits_truncate(self.flags).contains(IS_ADMIN) {
+            flags.push(Json::String(String::from("is_admin")));
+        }
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
         tmp.insert(String::from("email"),Json::String(self.email.clone()));
         tmp.insert(String::from("usename"),Json::String(self.username.clone()));
@@ -314,6 +317,15 @@ pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
                    rows.iter().filter_map(|row| {
                        Category::from_row(row)
                    }).collect()
+               })
+}
+
+pub fn get_category_by_id(conn:&Connection,id:i32) -> Result<Option<Category>,pe::Error> {
+    conn.query("SELECT id,name,desc,flags,created FROM category WHERE id = $1",
+               &[&id]).map(|rows| {
+                   rows.iter().next().and_then(|row| {
+                       Category::from_row(row)
+                   })
                })
 }
 

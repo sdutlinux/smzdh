@@ -22,6 +22,11 @@ pub fn create_comment(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
                             sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+    try_caching!(
+        rc,format!("post_{}",post_id),
+        sexpect!(stry!(databases::get_post_by_id(&pc,post_id)),
+                 BError::ResourceNotFound,"Post 不存在。"),3600
+    );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_comment(&pc,content,*uid,post_id));
     headers::sjer()
