@@ -11,7 +11,7 @@ use smzdh_commons::utils::{self,CURRENT_SITE};
 use smzdh_commons::email;
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::middleware::{Json,Cookies};
-use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL};
+use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 
 use std::default::Default;
 
@@ -70,21 +70,27 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
 pub fn fetch(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
                        BError::UserNotLogin);
-    let id = stry!(
-        sexpect!(
-            req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
-            SError::ParamsError,"未传入 user_id 参数。"
-        ).parse::<i32>(),
-        SError::ParamsError,"id 格式错误。");
-    if id == *uid {
-        pconn!(pc);
-        let user = sexpect!(stry!(databases::find_user_by_id(&pc,id)));
-        let mut response = headers::JsonResponse::new();
-        response.move_from_btmap(user.to_json());
-        headers::success_json_response(&response)
+    let id_str = sexpect!(
+        req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
+        SError::ParamsError,"未传入 user_id 参数。"
+    );
+    let id:i32;
+    if id_str == "self" {
+        id = *uid
     } else {
-        headers::sjer()
+        id = stry!(
+            id_str.parse::<i32>(),
+            SError::ParamsError,"id 格式错误。"
+        )
     }
+    check!(id==*uid);
+    pconn!(pc);
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+    let mut response = headers::JsonResponse::new();
+    response.move_from_btmap(user.to_json());
+    headers::success_json_response(&response)
 }
 
 pub fn verify_email(req:&mut Request) -> IronResult<Response> {
@@ -108,6 +114,7 @@ pub fn verify_email(req:&mut Request) -> IronResult<Response> {
             ),..Default::default()
         },
         uid));
+    stry!(rc.del(format!("user_{}",uid)));
     headers::sjer()
 }
 
