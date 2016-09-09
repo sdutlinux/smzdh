@@ -26,6 +26,12 @@ bitflags! {
     }
 }
 
+bitflags! {
+    pub flags PostFlag:i64 {
+        const IS_DELETE         = 0x1,
+    }
+}
+
 pub fn test() {
     if UserFlag::from_bits_truncate(1).contains(VERIFY_EMAIL) {
         info!("verify email");
@@ -299,20 +305,20 @@ db_struct!{
     Category CategoryDb {
         pub id:i32,
         pub name:String,
-        pub desc:String,
+        pub description:String,
         pub flags:i64,
         pub created:DateTime<Local>
     }
 }
 
 pub fn create_cagegory(conn:&Connection,name:&str,desc:&str) -> ::postgres::Result<u64> {
-    conn.execute("INSERT INTO category (name,desc) VALUES ($1,$2)",
+    conn.execute("INSERT INTO category (name,description) VALUES ($1,$2)",
                  &[&name,&desc])
 }
 
 pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
                     -> Result<Vec<Category>,pe::Error> {
-    conn.query("SELECT id,name,desc,flags,created FROM category OFFSET $1 LIMIT $2",
+    conn.query("SELECT id,name,desc,description,created FROM category OFFSET $1 LIMIT $2",
                &[&skip,&limit]).map(|rows| {
                    rows.iter().filter_map(|row| {
                        Category::from_row(row)
@@ -334,7 +340,7 @@ impl ToJson for Category {
         let mut tmp = BTreeMap::new();
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
         tmp.insert(String::from("name"),Json::String(self.name.clone()));
-        tmp.insert(String::from("desc"),Json::String(self.desc.clone()));
+        tmp.insert(String::from("desc"),Json::String(self.description.clone()));
         tmp.insert(String::from("flags"),Json::I64(self.flags as i64));
         tmp.insert(String::from("created"),Json::String(
             self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
@@ -347,7 +353,7 @@ impl Category {
         let mut tmp = BTreeMap::new();
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
         tmp.insert(String::from("name"),Json::String(self.name));
-        tmp.insert(String::from("desc"),Json::String(self.desc));
+        tmp.insert(String::from("desc"),Json::String(self.description));
         tmp.insert(String::from("flags"),Json::I64(self.flags as i64));
         tmp.insert(String::from("created"),Json::String(
             self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
