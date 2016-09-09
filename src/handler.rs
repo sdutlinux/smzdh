@@ -42,6 +42,7 @@ pub fn run() {
     router.get("/post",api::posts::posts_list,"get post list");
     router.post("/post",api::posts::create_post,"create post");
     router.get("/post/:post_id",api::posts::get_post_by_id,"get post by id");
+    router.delete("/post/:post_id",api::posts::delete_post_by_id,"delete post by id");
 
     router.get("/comment",api::comments::get_comments_by_post_id,"get comment");
     router.post("/comment",api::comments::create_comment,"create comment");

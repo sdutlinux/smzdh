@@ -99,7 +99,7 @@ pub fn verify_email(req:&mut Request) -> IronResult<Response> {
         databases::UserDb {
             flags:Some(
                 {
-                    let mut uf =  UserFlag::from_bits_truncate(user.flags as i64);
+                    let mut uf = UserFlag::from_bits_truncate(user.flags as i64);
                     uf.insert(VERIFY_EMAIL);
                     uf.bits()
                 }

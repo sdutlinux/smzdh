@@ -41,6 +41,17 @@ pub fn test() {
 
 }
 
+fn gen_update_field(data:&BTreeMap<&str,&ToSql>) -> String {
+    data.keys()
+        .filter(|&&x| {
+            x.ne("id")
+        })
+        .enumerate().map(|(index,v)| {
+            format!("{}=${}",v,index+1)
+        }).collect::<Vec<String>>().join(",")
+}
+
+
 trait FromRow {
     fn from_row(row:Row) -> Option<Self> where Self:Sized;
 }
@@ -165,13 +176,7 @@ pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error
 pub fn update_user_by_uid(conn:&Connection,ud:UserDb,uid:i32) -> ::postgres::Result<u64> {
     let update_data:BTreeMap<&str,&ToSql> = ud.has();
     if update_data.is_empty() { Ok(0) } else {
-        let update_field = update_data.keys()
-            .filter(|&&x| {
-                x.ne("id")
-            })
-            .enumerate().map(|(index,v)| {
-                format!("{}=${}",v,index+1)
-            }).collect::<Vec<String>>().join(",");
+        let update_field = gen_update_field(&update_data);
         let update_value = update_data.values().cloned().collect::<Vec<&ToSql>>();
         conn.execute(&*format!("UPDATE users SET {} where id = {}",update_field,uid),&update_value)
     }
@@ -257,6 +262,15 @@ pub fn post_list(conn:&Connection,skip:i64,limit:i64,category_id:Option<i32>)
             Post::from_row(row)
         }).collect()
     })
+}
+
+pub fn update_post_by_id(conn:&Connection,pd:PostDb,id:i32) -> ::postgres::Result<u64> {
+    let update_data:BTreeMap<&str,&ToSql> = pd.has();
+    if update_data.is_empty() { Ok(0) } else {
+        let update_field = gen_update_field(&update_data);
+        let update_value = update_data.values().cloned().collect::<Vec<&ToSql>>();
+        conn.execute(&*format!("UPDATE posts SET {} WHERE id = {}",update_field,id),&update_value)
+    }
 }
 
 db_struct!{
@@ -364,7 +378,7 @@ impl Category {
 
 
 
-
+#[allow(dead_code)]
 struct PostCategory {
     pub id:i32,
     pub post_id:i32,

@@ -1,12 +1,16 @@
 use iron::prelude::*;
 use router::Router;
-use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
+use redis::Commands;
+use rustc_serialize::json::{self,ToJson};
+
+use smzdh_commons::databases::{self,UserFlag,PostFlag,VERIFY_EMAIL,CanCache};
 use smzdh_commons::errors::{SError,BError};
 use smzdh_commons::headers;
 use smzdh_commons::utils;
 use smzdh_commons::middleware::Cookies;
-use rustc_serialize::json::{self,ToJson};
 use smzdh_commons::middleware::Json;
+
+use std::default::Default;
 
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
@@ -29,9 +33,15 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let mut response = headers::JsonResponse::new();
     response.insert(
         "posts",
-        &posts.into_iter().map(
-            |x|
-            {x.into_simple_json()}
+        &posts.into_iter().filter_map(
+            |x| {
+                if PostFlag::from_bits_truncate(x.flags as i64)
+                    .contains(databases::IS_DELETE) {
+                        None
+                    } else {
+                        Some(x.into_simple_json())
+                    }
+            }
         ).collect::<Vec<json::Json>>());
     headers::success_json_response(&response)
 }
@@ -60,6 +70,39 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(post.to_json());
     headers::success_json_response(&response)
+}
+
+pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
+    let uid = sexpect!(req.extensions.get::<Cookies>(),
+                       BError::UserNotLogin);
+    let id = stry!(
+        sexpect!(
+            req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
+            "未传入 post_id 参数。",g
+        ).parse::<i32>(),
+        SError::ParamsError,
+        "post_id 格式错误。");
+    pconn!(pc);
+    rconn!(rc);
+    let user = try_caching!(rc,format!("user_{}",uid),
+                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
+    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)
+                              ,BError::ResourceNotFound,"Post 不存在。"));
+    check!(post.author == *uid);
+    stry!(databases::update_post_by_id(
+        &pc,
+        databases::PostDb {
+            flags:Some(
+                {
+                    let mut pf = PostFlag::from_bits_truncate(post.flags as i64);
+                    pf.insert(databases::IS_DELETE);
+                    pf.bits()
+                }
+            ),..Default::default()
+        },post.id));
+    stry!(rc.del(format!("post_{}",post.id)));
+    headers::sjer()
 }
 
 pub fn create_post(req:&mut Request) -> IronResult<Response> {
