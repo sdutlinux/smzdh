@@ -23,6 +23,7 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     let username = jget!(object,"username",as_string);
     let password = jget!(object,"password",as_string);
     let email = jget!(object,"email",as_string);
+    check!(utils::valid_email(email),"email 格式错误。",g);
     pconn!(pc);
     stry!(databases::create_user(&pc,email,username,password));
     let user = sexpect!(stry!(databases::find_user_by_username(&pc,username)));
@@ -41,10 +42,10 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
         sexpect!(req.extensions.get::<Json>(),
                  "body 必须是 Json.",g).as_object(),
         "Json 格式错误。",g);
-    let username = jget!(object,"username",as_string);
+    let email = jget!(object,"email",as_string);
     let password = jget!(object,"password",as_string);
     pconn!(pc);
-    let user =  sexpect!(stry!(databases::find_user_by_username(&pc,username)),
+    let user =  sexpect!(stry!(databases::find_user_by_email(&pc,email)),
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",username);

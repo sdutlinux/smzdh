@@ -6,6 +6,7 @@ use rustc_serialize::hex::ToHex;
 use rustc_serialize::base64::{STANDARD,ToBase64,FromBase64};
 use rand::{ self, Rng, OsRng };
 use iron::Url;
+use regex::Regex;
 
 pub static CURRENT_SITE:&'static str =  "localhost";
 
@@ -157,4 +158,9 @@ pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, symmetriccipher:
 
 pub fn decrypt_cookie(edata:&[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
     decrypt(edata,KEY,SECRET)
+}
+
+pub fn valid_email(email:&str) -> bool {
+    let re = Regex::new(r"[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}").unwrap();
+    re.is_match(email)
 }

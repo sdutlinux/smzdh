@@ -16,7 +16,7 @@ redis = "*"
 clippy = "*"
 env_logger = "*"
 chrono = { version = "*", features = ["rustc-serialize"] }
-nom = { version = "*", features = ["regexp","regexp_macros"] }
+nom = { version = "*", features = ["regexp"] }
 
 [dependencies.smzdh_commons]
 version = "*"

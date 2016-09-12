@@ -17,6 +17,7 @@ extern crate url;
 extern crate plugin;
 extern crate hyper;
 extern crate bincode;
+extern crate regex;
 
 #[macro_export]
 macro_rules! jget {

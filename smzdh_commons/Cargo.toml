@@ -19,3 +19,4 @@ hyper = "*"
 bitflags = "*"
 bincode = {version = "*", features = ["rustc-serialize"]}
 postgres = {version = "*", features = ["rustc-serialize","chrono"]}
+regex = "*"

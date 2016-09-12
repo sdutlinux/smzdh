@@ -163,6 +163,15 @@ pub fn find_user_by_username(conn:&Connection,name:&str) -> Result<Option<User>,
                })
 }
 
+pub fn find_user_by_email(conn:&Connection,email:&str) -> Result<Option<User>,pe::Error> {
+    conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE email = $1",
+               &[&email]).map(|rows| {
+                   rows.iter().next().and_then(|row| {
+                       User::from_row(row)
+                   })
+               })
+}
+
 pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE id = $1",
                &[&id]).map(|rows| {
