@@ -128,5 +128,5 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_post(&pc,title,content,*uid,category_id));
-    headers::success_json_response(&headers::JsonResponse::new())
+    headers::sjer()
 }

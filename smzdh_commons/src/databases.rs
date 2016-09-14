@@ -232,7 +232,7 @@ pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32,category_
     let prepare = try!(conn.prepare_cached(
         "INSERT INTO posts (title,content,author) VALUES ($1,$2,$3) RETURNING id"
     ));
-    let result = try!(prepare.query(&[&title,&content,&author]));
+    let result =try!(prepare.query(&[&title,&content,&author]));
     match result.iter().next() {
         Some(x) => {
             let post_id:i32 = x.get("id");
@@ -341,7 +341,7 @@ pub fn create_cagegory(conn:&Connection,name:&str,desc:&str) -> ::postgres::Resu
 
 pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
                     -> Result<Vec<Category>,pe::Error> {
-    conn.query("SELECT id,name,desc,description,created FROM category OFFSET $1 LIMIT $2",
+    conn.query("SELECT id,name,description,flags,created FROM categorys OFFSET $1 LIMIT $2",
                &[&skip,&limit]).map(|rows| {
                    rows.iter().filter_map(|row| {
                        Category::from_row(row)
@@ -350,7 +350,7 @@ pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
 }
 
 pub fn get_category_by_id(conn:&Connection,id:i32) -> Result<Option<Category>,pe::Error> {
-    conn.query("SELECT id,name,desc,flags,created FROM category WHERE id = $1",
+    conn.query("SELECT id,name,description,flags,created FROM categorys WHERE id = $1",
                &[&id]).map(|rows| {
                    rows.iter().next().and_then(|row| {
                        Category::from_row(row)

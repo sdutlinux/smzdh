@@ -48,7 +48,7 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     let user =  sexpect!(stry!(databases::find_user_by_email(&pc,email)),
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
-        info!("user:{} login success",username);
+        info!("user:{} login success",email);
         let mut rng = OsRng::new().ok().unwrap();
         let mut r = [0;16];
         rng.fill_bytes(&mut r);

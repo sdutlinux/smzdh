@@ -161,6 +161,6 @@ pub fn decrypt_cookie(edata:&[u8]) -> Result<Vec<u8>, symmetriccipher::Symmetric
 }
 
 pub fn valid_email(email:&str) -> bool {
-    let re = Regex::new(r"[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}").unwrap();
+    let re = Regex::new(r"^\S+@\S+\.\S+$").unwrap();
     re.is_match(email)
 }
