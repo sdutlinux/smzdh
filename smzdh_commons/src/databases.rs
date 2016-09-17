@@ -315,7 +315,7 @@ pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
 pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:i64
                               ,limit:i64)
                               -> Result<Vec<Comment>,pe::Error> {
-    conn.query("SELECT id,comment,author,post_id,flags,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
+    conn.query("SELECT id,content,author,post_id,flags,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
                &[&post_id,&skip,&limit]).map(|rows| {
                    rows.iter().filter_map(|row| {
                        Comment::from_row(row)

@@ -26,10 +26,10 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let user = try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let posts = stry!(databases::post_list(&pc,skip,limit,ctgi));
+    let posts = stry!(databases::post_list(pc,skip,limit,ctgi));
     let mut response = headers::JsonResponse::new();
     response.insert(
         "posts",
@@ -59,11 +59,11 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let post = try_caching!(
         rc,format!("post_{}",id),
-        sexpect!(stry!(databases::get_post_by_id(&pc,id)
+        sexpect!(stry!(databases::get_post_by_id(pc,id)
                        ,BError::ResourceNotFound,"Post 不存在。")),
         3600
     );
@@ -85,13 +85,13 @@ pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let post = sexpect!(stry!(databases::get_post_by_id(&pc,id)
+    let post = sexpect!(stry!(databases::get_post_by_id(pc,id)
                               ,BError::ResourceNotFound,"Post 不存在。"));
     check!(post.author == *uid);
     stry!(databases::update_post_by_id(
-        &pc,
+        pc,
         databases::PostDb {
             flags:Some(
                 {
@@ -119,14 +119,14 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     try_caching!(
         rc,format!("category_{}",category_id),
-        sexpect!(stry!(databases::get_category_by_id(&pc,category_id)),
+        sexpect!(stry!(databases::get_category_by_id(pc,category_id)),
                  BError::ResourceNotFound,"Category 不存在。")
     );
     let user = try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    stry!(databases::create_post(&pc,title,content,*uid,category_id));
+    stry!(databases::create_post(pc,title,content,*uid,category_id));
     headers::sjer()
 }

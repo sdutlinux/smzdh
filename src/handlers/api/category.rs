@@ -23,11 +23,11 @@ pub fn create_category(req:&mut Request) -> IronResult<Response> {
     let desc = jget!(object,"desc",as_string);
     let user = try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
     );
     let flags = UserFlag::from_bits_truncate(user.flags);
     check!(flags.contains(VERIFY_EMAIL) && flags.contains(IS_ADMIN));
-    stry!(databases::create_cagegory(&pc,name,desc));
+    stry!(databases::create_cagegory(pc,name,desc));
     headers::sjer()
 }
 
@@ -41,10 +41,10 @@ pub fn category_list(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let user = try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(&pc,*uid)))
+        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let categorys = stry!(databases::get_category_list(&pc,skip,limit));
+    let categorys = stry!(databases::get_category_list(pc,skip,limit));
     let mut response =  headers::JsonResponse::new();
     response.insert(
         "category",

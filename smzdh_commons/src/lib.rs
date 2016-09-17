@@ -19,6 +19,15 @@ extern crate hyper;
 extern crate bincode;
 extern crate regex;
 
+thread_local!(
+    pub static PC:Result<::postgres::Connection,::postgres::error::ConnectError>
+        = ::postgres::Connection::connect(config::URL,::postgres::SslMode::None);
+    pub static RC:Result<::redis::Connection,::redis::RedisError>
+        = redis::Client::open(config::REDIS)
+        .and_then(|c| c.get_connection());
+);
+
+
 #[macro_export]
 macro_rules! jget {
     ($json:expr,$key:expr,$convert:ident) => (
@@ -121,12 +130,40 @@ macro_rules! sexpect {
     )
 }
 
+
+pub fn fuckpg()
+              -> &'static Result<::postgres::Connection,::postgres::error::ConnectError> {
+    PC.with(|pc| { unsafe { &*(pc as * const _) } })
+}
+
+pub fn fuckredis()
+                 -> &'static Result<::redis::Connection,::redis::RedisError> {
+    RC.with(|rc| { unsafe { &*(rc as * const _) } })
+}
+
+#[macro_export]
+macro_rules! pconn {
+    ($v:ident) => (
+        let $v = match *$crate::fuckpg() {
+            ::std::result::Result::Ok(ref c) => c,
+            ::std::result::Result::Err(ref e) => {
+                info!("postgresql conn error {:?}",e);
+                return ::std::result::Result::Err(
+                    $crate::errors::SError::InternalServerError.into_iron_error(
+                        None
+                    )
+                )
+            },
+        };
+    );
+}
+
 #[macro_export]
 macro_rules! rconn {
     ($v:ident) => (
-        let $v = match $crate::scredis::redis_conn() {
-            ::std::result::Result::Ok(c) => c,
-            ::std::result::Result::Err(e) => {
+        let $v = match *$crate::fuckredis() {
+            ::std::result::Result::Ok(ref c) => c,
+            ::std::result::Result::Err(ref e) => {
                 info!("redis conn error {:?}",e);
                 return ::std::result::Result::Err(
                     $crate::errors::SError::InternalServerError.into_iron_error(
@@ -139,34 +176,16 @@ macro_rules! rconn {
 }
 
 #[macro_export]
-macro_rules! pconn {
-    ($v:ident) => (
-        let $v = match $crate::databases::conn() {
-            ::std::result::Result::Ok(c) => c,
-            ::std::result::Result::Err(e) => {
-                info!("postgresql conn error {:?}",e);
-                return ::std::result::Result::Err(
-                    $crate::errors::SError::InternalServerError.into_iron_error(
-                        None
-                    )
-                );
-            }
-        };
-    );
-}
-
-#[macro_export]
 macro_rules! try_caching {
     ($conn:expr,$key:expr,$data:expr) => (try_caching!($conn,$key,$data,172800));
     ($conn:expr,$key:expr,$data:expr,$ex:expr) => (
         {
-            let tmp:Option<Vec<u8>> = stry!(::redis::Commands::get(&$conn,$key));
+            let tmp:Option<Vec<u8>> = stry!(::redis::Commands::get($conn,$key));
             match tmp {
                 Some(x) => stry!($crate::databases::CanCache::from_bit(&x)),
                 None => {
-                    info!("去数据库查了");
                     let data = $data;
-                    stry!(::redis::Commands::set_ex(&$conn,$key,stry!(data.to_bit()),$ex));
+                    stry!(::redis::Commands::set_ex($conn,$key,stry!(data.to_bit()),$ex));
                     data
                 },
             }
@@ -179,7 +198,7 @@ pub mod utils;
 pub mod databases;
 pub mod middleware;
 pub mod scredis;
-mod config;
+pub mod config;
 pub mod errors;
 pub mod email;
 

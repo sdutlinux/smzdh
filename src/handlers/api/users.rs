@@ -25,8 +25,8 @@ pub fn signup(req:&mut Request) -> IronResult<Response> {
     let email = jget!(object,"email",as_string);
     check!(utils::valid_email(email),"email 格式错误。",g);
     pconn!(pc);
-    stry!(databases::create_user(&pc,email,username,password));
-    let user = sexpect!(stry!(databases::find_user_by_username(&pc,username)));
+    stry!(databases::create_user(pc,email,username,password));
+    let user = sexpect!(stry!(databases::find_user_by_username(pc,username)));
     rconn!(rc);
     let token = utils::gen_string(8);
     stry!(rc.set_ex(&token,user.id,86400));
@@ -45,7 +45,7 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     let email = jget!(object,"email",as_string);
     let password = jget!(object,"password",as_string);
     pconn!(pc);
-    let user =  sexpect!(stry!(databases::find_user_by_email(&pc,email)),
+    let user =  sexpect!(stry!(databases::find_user_by_email(pc,email)),
                          SError::UserOrPassError);
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",email);
@@ -80,7 +80,7 @@ pub fn fetch(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(&pc,*uid))));
+                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(user.to_json());
     headers::success_json_response(&response)
@@ -94,9 +94,9 @@ pub fn verify_email(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     pconn!(pc);
     let uid = sexpect!(stry!(rc.get(token)),"token 无效。",g);
-    let user = sexpect!(stry!(databases::find_user_by_id(&pc,uid)));
+    let user = sexpect!(stry!(databases::find_user_by_id(pc,uid)));
     stry!(databases::update_user_by_uid(
-        &pc,
+        pc,
         databases::UserDb {
             flags:Some(
                 {

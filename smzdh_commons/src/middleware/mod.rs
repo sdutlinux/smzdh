@@ -46,7 +46,6 @@ impl BeforeMiddleware for Cookies {
                     return Ok(());
                 }
             }
-            info!("Cookies is {:?}",uid);
         }
         req.extensions.insert::<Cookies>(uid);
         Ok(())
