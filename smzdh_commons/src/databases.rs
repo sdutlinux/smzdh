@@ -150,6 +150,15 @@ impl ToJson for User {
     }
 }
 
+impl User {
+    pub fn into_simple_json(self) -> Json {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("usename"),Json::String(self.username.clone()));
+        Json::Object(tmp)
+    }
+}
+
 pub fn create_user(conn:&Connection,email:&str,name:&str,pass:&str) -> Result<u64,SError> {
     let (ep,salt) = utils::sha_encrypt(pass);
     conn.execute("INSERT INTO users (email,username,password,salt) VALUES ($1,$2,$3,$4)",
@@ -233,6 +242,27 @@ impl Post {
         tmp.insert(String::from("created"),Json::String(
             self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
         Json::Object(tmp)
+    }
+
+    pub fn into_simple_btmap(self) -> BTreeMap<String,Json> {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        tmp
+    }
+
+    pub fn into_btmap(self) -> BTreeMap<String,Json> {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("title"),Json::String(self.title.clone()));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        tmp
     }
 }
 

@@ -192,7 +192,7 @@ macro_rules! try_caching {
                                 .and_then( |dbdata| {
                                     dbdata.to_bit()
                                         .map_err($crate::errors::SError::from)
-                                        .and_then::<Vec<u8>,_>(|edata:Vec<u8>| {
+                                        .and_then::<(),_>(|edata| {
                                             ::redis::Commands::set_ex($conn,$key,edata,$ex)
                                                 .map_err($crate::errors::SError::from)
                                         })

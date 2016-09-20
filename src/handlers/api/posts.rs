@@ -56,7 +56,15 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
                     .contains(databases::IS_DELETE) {
                         None
                     } else {
-                        Some(x.into_simple_json())
+                        try_caching!(
+                            rc,
+                            format!("user_{}",x.author),
+                            databases::find_user_by_id(pc,x.author)
+                        ).ok().map(|user| {
+                            let mut post_obj = x.into_simple_btmap();
+                            post_obj.insert(String::from("author"),user.into_simple_json());
+                            post_obj.to_json()
+                        })
                     }
             }
         ).collect::<Vec<json::Json>>());
@@ -78,8 +86,14 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
         databases::get_post_by_id(pc,pid),
         3600
     ));
+    let author = stry!(
+        try_caching!(rc,format!("user_{}",post.author),
+                     databases::find_user_by_id(pc,post.author))
+    );
+    let mut post_obj = post.into_btmap();
+    post_obj.insert(String::from("author"),author.into_simple_json());
     let mut response = headers::JsonResponse::new();
-    response.move_from_btmap(post.to_json());
+    response.move_from_btmap(post_obj.to_json());
     headers::success_json_response(&response)
 }
 
