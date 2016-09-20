@@ -8,24 +8,24 @@ use smzdh_commons::utils;
 
 
 pub fn create_comment(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(
-        req.extensions.get::<Cookies>(),
-        SError::UserNotLogin);
-    let object = sexpect!(
-        sexpect!(req.extensions.get::<Json>(),
-                 SError::ParamsError,
-                 "body 必须是 Json.").as_object(),
-        SError::ParamsError);
-    let post_id = jget!(object,"post_id",as_i64) as i32;
-    let content = jget!(object,"content",as_string);
+    uid!(uid,req);
+    json!(json,req);
+    let req_comment = stry!(json.as_object().ok_or(SError::ParamsError)
+                             ,"Comment 格式因该为 Object。");
+    let post_id = jget!(req_comment,"post_id",as_i64) as i32;
+    let content = jget!(req_comment,"content",as_string);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
-    try_caching!(
-        rc,format!("post_{}",post_id),
-        sexpect!(stry!(databases::get_post_by_id(pc,post_id)),
-                 SError::ResourceNotFound,"Post 不存在。"),3600
+    let user = stry!(
+        try_caching!(rc,format!("user_{}",uid),
+                     databases::find_user_by_id(pc,*uid))
+    );
+    stry!(
+        try_caching!(
+            rc,format!("post_{}",post_id),
+            databases::get_post_by_id(pc,post_id)
+                ,3600),
+        "Post 不存在。"
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_comment(pc,content,*uid,post_id));
@@ -33,19 +33,24 @@ pub fn create_comment(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
-    let post_id = stry!(
-        sexpect!(utils::get_query_params(&req.url,"post_id"))
-            .parse::<i32>(),
-        SError::ParamsError,"post_id 应该为一个数字");
+    uid!(uid,req);
+    let spid = stry!(utils::get_query_params(&req.url,"post_id")
+                     .ok_or(SError::ParamsError)
+                     ,"未传入 post_id 参数。");
+    let pid = stry!(
+        spid.parse::<i32>()
+            .map_err(|_| SError::ParamsError)
+            ,"post_id 格式错误。"
+    );
     check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
+    let user = stry!(
+        try_caching!(rc,format!("user_{}",uid),
+                     databases::find_user_by_id(pc,*uid))
+    );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let comments = stry!(databases::get_comment_by_post_id(pc,post_id,skip,limit));
+    let comments = stry!(databases::get_comment_by_post_id(pc,pid,skip,limit));
     let mut response = headers::JsonResponse::new();
     response.insert("comments",&comments);
     headers::success_json_response(&response)

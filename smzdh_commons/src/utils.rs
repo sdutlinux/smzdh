@@ -8,6 +8,10 @@ use rand::{ self, Rng, OsRng };
 use iron::Url;
 use regex::Regex;
 
+use super::errors::SError;
+
+use std::convert::From;
+
 pub static CURRENT_SITE:&'static str =  "localhost";
 
 pub fn gen_string(len:usize) -> String {
@@ -145,7 +149,7 @@ pub fn hello() {
 static SECRET:&'static [u8] = b"smzdhaxibaahouga";
 static KEY:&'static [u8] = b"qmfygnlgabhuxtgcpwkxdzxquhhbbqxw";
 
-pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
+pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, SError> {
     let bsalt = match salt.from_base64() {
         Ok(s) => s,
         Err(e) => {
@@ -153,11 +157,11 @@ pub fn encrypt_cookie(data:&[u8],salt:&str) ->  Result<Vec<u8>, symmetriccipher:
             unreachable!();
         },
     };
-    encrypt(&[data,&bsalt].concat(),KEY,SECRET)
+    encrypt(&[data,&bsalt].concat(),KEY,SECRET).map_err(From::from)
 }
 
-pub fn decrypt_cookie(edata:&[u8]) -> Result<Vec<u8>, symmetriccipher::SymmetricCipherError> {
-    decrypt(edata,KEY,SECRET)
+pub fn decrypt_cookie(edata:&[u8]) -> Result<Vec<u8>, SError> {
+    decrypt(edata,KEY,SECRET).map_err(From::from)
 }
 
 pub fn valid_email(email:&str) -> bool {

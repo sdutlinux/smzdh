@@ -6,6 +6,8 @@ use iron::modifiers::Header;
 
 use postgres::error as pe;
 use redis::RedisError;
+use crypto::symmetriccipher::SymmetricCipherError;
+use bincode::rustc_serialize::{EncodingError,DecodingError};
 
 use std::fmt::Display;
 use std::fmt;
@@ -56,6 +58,24 @@ impl From<pe::Error> for SError {
 
 impl From<RedisError> for SError {
     fn from(err: RedisError) -> SError {
+        SError::InternalServerError(Box::new(err))
+    }
+}
+
+impl From<SymmetricCipherError> for SError {
+    fn from(_: SymmetricCipherError) -> SError {
+        SError::InternalServerError(Box::new(SError::None))
+    }
+}
+
+impl From<DecodingError> for SError {
+    fn from(err: DecodingError) -> SError {
+        SError::InternalServerError(Box::new(err))
+    }
+}
+
+impl From<EncodingError> for SError {
+    fn from(err: EncodingError) -> SError {
         SError::InternalServerError(Box::new(err))
     }
 }

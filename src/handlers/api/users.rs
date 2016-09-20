@@ -14,24 +14,19 @@ use smzdh_commons::middleware::{Json,Cookies};
 use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 
 use std::default::Default;
+use std::convert::From;
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
-    req.extensions.get::<Json>().map(
-        |json| {
-            json.as_object()
-        }
-    )
-    let object = sexpect!(
-        sexpect!(req.extensions.get::<Json>(),
-                 "body 必须是 Json.",g).as_object(),
-        "Json 格式错误。",g);
-    let username = jget!(object,"username",as_string);
-    let password = jget!(object,"password",as_string);
-    let email = jget!(object,"email",as_string);
+    json!(json,req);
+    let req_user = stry!(json.as_object().ok_or(SError::ParamsError)
+                         ,"Json 格式因该为 Object。");
+    let username = jget!(req_user,"username",as_string);
+    let password = jget!(req_user,"password",as_string);
+    let email = jget!(req_user,"email",as_string);
     check!(utils::valid_email(email),"email 格式错误。",g);
     pconn!(pc);
     stry!(databases::create_user(pc,email,username,password));
-    let user = sexpect!(stry!(databases::find_user_by_username(pc,username)));
+    let user = stry!(databases::find_user_by_username(pc,username));
     rconn!(rc);
     let token = utils::gen_string(8);
     stry!(rc.set_ex(&token,user.id,86400));
@@ -43,15 +38,14 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     if req.extensions.get::<Cookies>().is_some() {
         return headers::success_json_response(&headers::JsonResponse::new());
     }
-    let object = sexpect!(
-        sexpect!(req.extensions.get::<Json>(),
-                 "body 必须是 Json.",g).as_object(),
-        "Json 格式错误。",g);
-    let email = jget!(object,"email",as_string);
-    let password = jget!(object,"password",as_string);
+    json!(json,req);
+    let req_user = stry!(json.as_object().ok_or(SError::ParamsError)
+                     ,"Json 格式因该为 Object。");
+    let email = jget!(req_user,"email",as_string);
+    let password = jget!(req_user,"password",as_string);
     pconn!(pc);
-    let user =  sexpect!(stry!(databases::find_user_by_email(pc,email)),
-                         SError::UserOrPassError);
+    let user =  stry!(databases::find_user_by_email(pc,email)
+                      .map_err(|_| SError::UserOrPassError));
     if utils::check_pass(password,&*user.password,&*user.salt) {
         info!("user:{} login success",email);
         let mut rng = OsRng::new().ok().unwrap();
@@ -74,32 +68,60 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn fetch(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
-    let id_str = sexpect!(
-        req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
-        SError::ParamsError,"未传入 user_id 参数。"
-    );
+    let uid = stry!(req.extensions.get::<Cookies>().ok_or(SError::UserNotLogin));
+    let id_str = stry!(req.extensions.get::<Router>()
+                       .and_then(|x| x.find("user_id"))
+                       .ok_or(SError::ParamsError),
+                       "未传入 user_id 参数。");
     self_user!(id,id_str,*uid);
     check!(id==*uid);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            databases::find_user_by_id(pc,*uid));
+    //user!(*uid,user,rc,pc);
+    //let user = stry!(
+        //try_caching!(rc,format!("user_{}",uid),
+                     //databases::find_user_by_id(pc,*uid))
+    //);
+
+    let user = ::redis::Commands::get(rc,format!("user_{}",uid))
+        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
+        .and_then(|data:Option<Vec<u8>>| {
+            match data {
+                Some(x) => {
+                    ::smzdh_commons::databases::CanCache::from_bit(&*x)
+                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
+                },
+                None => {
+                    databases::find_user_by_id(pc,*uid)
+                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
+                        .and_then(|dbdata| {
+                            dbdata.to_bit()
+                                .map_err(|err| ::smzdh_commons::errors::SError::from(err) )
+                                .and_then(|edata:Vec<u8>| {
+                                    ::redis::Commands::set_ex(rc,format!("user_{}",uid),edata,100)
+                                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
+                                })
+                                .map(|_| dbdata)
+                        })
+                },
+            }
+        });
+    let user:databases::User = user.unwrap();
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(user.to_json());
     headers::success_json_response(&response)
 }
 
 pub fn verify_email(req:&mut Request) -> IronResult<Response> {
-    let token = sexpect!(
-        req.extensions.get::<Router>().and_then(|x| x.find("token")),
-        SError::ParamsError,"未传入 token 参数。"
-    );
+    let token = stry!(
+        req.extensions.get::<Router>()
+            .and_then(|x| x.find("token"))
+            .ok_or(SError::ParamsError),
+        "未传入 token 参数。");
     rconn!(rc);
     pconn!(pc);
-    let uid = sexpect!(stry!(rc.get(token)),"token 无效。",g);
-    let user = sexpect!(stry!(databases::find_user_by_id(pc,uid)));
+    let uid:i32 = stry!(rc.get(token).ok().ok_or(SError::ParamsError),"token 无效。");
+    let user = stry!(databases::find_user_by_id(pc,uid));
     stry!(databases::update_user_by_uid(
         pc,
         databases::UserDb {

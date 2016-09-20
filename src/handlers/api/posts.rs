@@ -12,9 +12,24 @@ use smzdh_commons::middleware::Json;
 
 use std::default::Default;
 
+macro_rules! post_id {
+    ($str_post_id:ident,$post_id:ident,$req:expr) => {
+        let $str_post_id = stry!(
+            $req.extensions.get::<Router>()
+                .and_then(|x| x.find("post_id"))
+                .ok_or(SError::ParamsError)
+                ,"未传入 post_id 参数。"
+        );
+        let $post_id = stry!(
+            $str_post_id.parse::<i32>()
+                .map_err(|_| SError::ParamsError)
+                ,"post_id 格式错误。"
+        );
+    }
+}
+
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
+    uid!(uid,req);
     let ctg = utils::get_query_params(&req.url,"categroy");
     let mut ctgi:Option<i32> = None;
     if ctg.is_some() {
@@ -24,9 +39,11 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(
-        rc,format!("user_{}",uid),
-        databases::find_user_by_id(pc,*uid)
+    let user = stry!(
+        try_caching!(
+            rc,format!("user_{}",uid),
+            databases::find_user_by_id(pc,*uid)
+        )
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let posts = stry!(databases::post_list(pc,skip,limit,ctgi));
@@ -47,48 +64,36 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
-    let id = stry!(
-        sexpect!(
-            req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
-            "未传入 post_id 参数。",g
-        ).parse::<i32>(),
-        SError::ParamsError,
-        "post_id 格式错误。");
+    uid!(uid,req);
+    post_id!(spid,pid,req);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            databases::find_user_by_id(pc,*uid));
-    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let post = try_caching!(
-        rc,format!("post_{}",id),
-        sexpect!(stry!(databases::get_post_by_id(pc,id)
-                       ,SError::ResourceNotFound,"Post 不存在。")),
-        3600
+    let user = stry!(
+        try_caching!(rc,format!("user_{}",uid),
+                     databases::find_user_by_id(pc,*uid))
     );
+    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
+    let post = stry!(try_caching!(
+        rc,format!("post_{}",pid),
+        databases::get_post_by_id(pc,pid),
+        3600
+    ));
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(post.to_json());
     headers::success_json_response(&response)
 }
 
 pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
-    let id = stry!(
-        sexpect!(
-            req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
-            "未传入 post_id 参数。",g
-        ).parse::<i32>(),
-        SError::ParamsError,
-        "post_id 格式错误。");
+    uid!(uid,req);
+    post_id!(spid,pid,req);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(rc,format!("user_{}",uid),
-                            databases::find_user_by_id(pc,*uid));
+    let user = stry!(
+        try_caching!(rc,format!("user_{}",uid),
+                     databases::find_user_by_id(pc,*uid))
+    );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    let post = sexpect!(stry!(databases::get_post_by_id(pc,id)
-                              ,SError::ResourceNotFound,"Post 不存在。"));
+    let post = stry!(databases::get_post_by_id(pc,pid),"Post 不存在。");
     check!(post.author == *uid);
     stry!(databases::update_post_by_id(
         pc,
@@ -106,26 +111,25 @@ pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn create_post(req:&mut Request) -> IronResult<Response> {
-    let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       SError::UserNotLogin);
-    let object = sexpect!(
-        sexpect!(req.extensions.get::<Json>(),
-                 "body 必须是 Json.",g).as_object(),
-        SError::ParamsError);
-    let title = jget!(object,"title",as_string);
-    let content = jget!(object,"content",as_string);
-    let category_id = jget!(object,"category_id",as_i64) as i32;
+    uid!(uid,req);
+    json!(json,req);
+    let req_post = stry!(json.as_object().ok_or(SError::ParamsError)
+                         ,"Json 格式因该为 Object。");
+    let title = jget!(req_post,"title",as_string);
+    let content = jget!(req_post,"content",as_string);
+    let category_id = jget!(req_post,"category_id",as_i64) as i32;
     pconn!(pc);
     rconn!(rc);
-    try_caching!(
-        rc,format!("category_{}",category_id),
-        sexpect!(stry!(databases::get_category_by_id(pc,category_id)),
-                 SError::ResourceNotFound,"Category 不存在。")
+    stry!(
+        try_caching!(
+            rc,format!("category_{}",category_id),
+            databases::get_category_by_id(pc,category_id)
+        ),"Category 不存在。"
     );
-    let user = try_caching!(
+    let user = stry!(try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
-    );
+        databases::find_user_by_id(pc,*uid)
+    ));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     stry!(databases::create_post(pc,title,content,*uid,category_id));
     headers::sjer()

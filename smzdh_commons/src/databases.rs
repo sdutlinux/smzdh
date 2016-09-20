@@ -4,10 +4,12 @@ use postgres::rows::Row;
 use postgres::types::ToSql;
 use super::config;
 use super::utils;
+use super::errors::SError;
 use chrono::*;
 use rustc_serialize::json::{ToJson, Json};
 use std::collections::BTreeMap;
 use std::marker::Sized;
+use std::convert::From;
 use bincode::SizeLimit;
 use bincode::rustc_serialize::{encode, decode,EncodingResult,DecodingResult};
 
@@ -148,37 +150,44 @@ impl ToJson for User {
     }
 }
 
-pub fn create_user(conn:&Connection,email:&str,name:&str,pass:&str) -> ::postgres::Result<u64> {
+pub fn create_user(conn:&Connection,email:&str,name:&str,pass:&str) -> Result<u64,SError> {
     let (ep,salt) = utils::sha_encrypt(pass);
     conn.execute("INSERT INTO users (email,username,password,salt) VALUES ($1,$2,$3,$4)",
                  &[&email,&name,&ep,&salt])
+        .map_err(From::from)
 }
 
-pub fn find_user_by_username(conn:&Connection,name:&str) -> Result<Option<User>,pe::Error> {
+pub fn find_user_by_username(conn:&Connection,name:&str) -> Result<User,SError> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE username = $1",
-               &[&name]).map(|rows| {
-                   rows.iter().next().and_then(|row| {
-                       User::from_row(row)
-                   })
-               })
+               &[&name])
+        .map_err(From::from)
+        .and_then(|rows| {
+            rows.iter().next().and_then(|row| {
+                User::from_row(row)
+            }).ok_or(SError::ResourceNotFound)
+        })
 }
 
-pub fn find_user_by_email(conn:&Connection,email:&str) -> Result<Option<User>,pe::Error> {
+pub fn find_user_by_email(conn:&Connection,email:&str) -> Result<User,SError> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE email = $1",
-               &[&email]).map(|rows| {
-                   rows.iter().next().and_then(|row| {
-                       User::from_row(row)
-                   })
-               })
+               &[&email])
+        .map_err(From::from)
+        .and_then(|rows| {
+            rows.iter().next().and_then(|row| {
+                User::from_row(row)
+            }).ok_or(SError::ResourceNotFound)
+        })
 }
 
-pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<Option<User>,pe::Error> {
+pub fn find_user_by_id(conn:&Connection,id:i32) -> Result<User,SError> {
     conn.query("SELECT id,email,username,password,salt,flags,created FROM users WHERE id = $1",
-               &[&id]).map(|rows| {
-                   rows.iter().next().and_then(|row| {
-                       User::from_row(row)
-                   })
-               })
+               &[&id])
+        .map_err(From::from)
+        .and_then(|rows| {
+            rows.iter().next().and_then(|row| {
+                User::from_row(row)
+            }).ok_or(SError::ResourceNotFound)
+        })
 }
 
 
@@ -228,35 +237,39 @@ impl Post {
 }
 
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32,category_id:i32)
-                   -> ::postgres::Result<u64> {
-    let prepare = try!(conn.prepare_cached(
-        "INSERT INTO posts (title,content,author) VALUES ($1,$2,$3) RETURNING id"
-    ));
-    let result =try!(prepare.query(&[&title,&content,&author]));
+                   -> Result<u64,SError> {
+    let prepare = try!(
+        conn.prepare_cached(
+            "INSERT INTO posts (title,content,author) VALUES ($1,$2,$3) RETURNING id"
+        )
+    );
+    let result = try!(prepare.query(&[&title,&content,&author]));
     match result.iter().next() {
         Some(x) => {
             let post_id:i32 = x.get("id");
             let ipp = try!(conn.prepare_cached(
                 "INSERT INTO post_category (post_id,category_id) VALUES ($1,$2)"
             ));
-            ipp.execute(&[&post_id,&category_id])
+            ipp.execute(&[&post_id,&category_id]).map_err(From::from)
         },
         None => unreachable!(),
     }
 }
 
-pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Option<Post>,pe::Error> {
+pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Post,SError> {
     conn.query("SELECT id,title,content,author,flags,created FROM posts WHERE id = $1",
-               &[&id]).map(|rows| {
-                   rows.iter().next().and_then(|row| {
-                       Post::from_row(row)
-                   })
-               })
+               &[&id])
+        .map_err(From::from)
+        .and_then(|rows| {
+            rows.iter().next().and_then(|row| {
+                Post::from_row(row)
+            }).ok_or(SError::ResourceNotFound)
+        })
 }
 
 
 pub fn post_list(conn:&Connection,skip:i64,limit:i64,category_id:Option<i32>)
-                 -> Result<Vec<Post>,pe::Error> {
+                 -> Result<Vec<Post>,SError> {
     match category_id {
         Some(x) => {
             conn.query("SELECT id,content,author,flags,created FROM posts LEFT JOIN post_category ON posts.id = post_category.post_id WHERE post_category.category_id = $1 OFFSET $2 LIMIT $3",
@@ -266,19 +279,22 @@ pub fn post_list(conn:&Connection,skip:i64,limit:i64,category_id:Option<i32>)
             conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
                        &[&skip,&limit])
         }
-    }.map(|rows| {
-        rows.iter().filter_map(|row| {
-            Post::from_row(row)
-        }).collect()
-    })
+    }
+    .map_err(From::from)
+        .map(|rows| {
+            rows.iter().filter_map(|row| {
+                Post::from_row(row)
+            }).collect()
+        })
 }
 
-pub fn update_post_by_id(conn:&Connection,pd:PostDb,id:i32) -> ::postgres::Result<u64> {
+pub fn update_post_by_id(conn:&Connection,pd:PostDb,id:i32) -> Result<u64,SError> {
     let update_data:BTreeMap<&str,&ToSql> = pd.has();
     if update_data.is_empty() { Ok(0) } else {
         let update_field = gen_update_field(&update_data);
         let update_value = update_data.values().cloned().collect::<Vec<&ToSql>>();
         conn.execute(&*format!("UPDATE posts SET {} WHERE id = {}",update_field,id),&update_value)
+            .map_err(From::from)
     }
 }
 
@@ -307,20 +323,23 @@ impl ToJson for Comment {
 }
 
 pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
-                      -> ::postgres::Result<u64> {
+                      -> Result<u64,SError> {
     conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",
                  &[&content,&author,&post_id])
+        .map_err(From::from)
 }
 
 pub fn get_comment_by_post_id(conn:&Connection,post_id:i32,skip:i64
                               ,limit:i64)
-                              -> Result<Vec<Comment>,pe::Error> {
+                              -> Result<Vec<Comment>,SError> {
     conn.query("SELECT id,content,author,post_id,flags,created FROM comments WHERE post_id = $1 OFFSET $2 LIMIT $3",
-               &[&post_id,&skip,&limit]).map(|rows| {
-                   rows.iter().filter_map(|row| {
-                       Comment::from_row(row)
-                   }).collect()
-               })
+               &[&post_id,&skip,&limit])
+        .map_err(From::from)
+        .map(|rows| {
+            rows.iter().filter_map(|row| {
+                Comment::from_row(row)
+            }).collect()
+        })
 }
 
 
@@ -334,28 +353,33 @@ db_struct!{
     }
 }
 
-pub fn create_cagegory(conn:&Connection,name:&str,desc:&str) -> ::postgres::Result<u64> {
+pub fn create_cagegory(conn:&Connection,name:&str,desc:&str) -> Result<u64,SError> {
     conn.execute("INSERT INTO category (name,description) VALUES ($1,$2)",
                  &[&name,&desc])
+        .map_err(From::from)
 }
 
 pub fn get_category_list(conn:&Connection,skip:i64,limit:i64)
-                    -> Result<Vec<Category>,pe::Error> {
+                         -> Result<Vec<Category>,SError> {
     conn.query("SELECT id,name,description,flags,created FROM categorys OFFSET $1 LIMIT $2",
-               &[&skip,&limit]).map(|rows| {
-                   rows.iter().filter_map(|row| {
-                       Category::from_row(row)
-                   }).collect()
-               })
+               &[&skip,&limit])
+        .map_err(From::from)
+        .map(|rows| {
+            rows.iter().filter_map(|row| {
+                Category::from_row(row)
+            }).collect()
+        })
 }
 
-pub fn get_category_by_id(conn:&Connection,id:i32) -> Result<Option<Category>,pe::Error> {
+pub fn get_category_by_id(conn:&Connection,id:i32) -> Result<Category,SError> {
     conn.query("SELECT id,name,description,flags,created FROM categorys WHERE id = $1",
-               &[&id]).map(|rows| {
-                   rows.iter().next().and_then(|row| {
-                       Category::from_row(row)
-                   })
-               })
+               &[&id])
+        .map_err(From::from)
+        .and_then(|rows| {
+            rows.iter().next().and_then(|row| {
+                Category::from_row(row)
+            }).ok_or(SError::ResourceNotFound)
+        })
 }
 
 impl ToJson for Category {

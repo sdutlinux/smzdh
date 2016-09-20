@@ -69,26 +69,20 @@ macro_rules! check {
 
 #[macro_export]
 macro_rules! stry {
-    ($result:expr) => (stry!($result,
-                             $crate::errors::SError::InternalServerError(Box::new($crate::errors::SError::None))));
-
-    ($result:expr, $modifier:expr) => (match $result {
+    ($result:expr) => (match $result {
         ::std::result::Result::Ok(val) => val,
         ::std::result::Result::Err(err) => {
             info!("Error case {:?}",err);
             return ::std::result::Result::Err(
-                $modifier.into_iron_error(None));
+                $crate::errors::SError::from(err).into_iron_error(None));
         }
     });
-    ($result:expr,$modifier:expr, g) => (stry!($result,
-                                               $crate::errors::SError::InternalServerError,
-                                               $modifier));
-    ($result:expr,$modifier:expr,$desc:expr) => (match $result {
+    ($result:expr,$desc:expr) => (match $result {
         ::std::result::Result::Ok(x) => x,
         ::std::result::Result::Err(err) => {
             info!("Error case {:?}",err);
             return ::std::result::Result::Err(
-                $modifier.into_iron_error(
+                $crate::errors::SError::from(err).into_iron_error(
                     ::std::option::Option::Some(
                         ::std::string::String::from($desc)
                     )
@@ -183,32 +177,29 @@ macro_rules! try_caching {
     ($conn:expr,$key:expr,$data:expr) => (try_caching!($conn,$key,$data,172800));
     ($conn:expr,$key:expr,$data:expr,$ex:expr) => (
         {
-            ::redis::Commands::get($conn,$key).map_err(|err| {
-                $crate::error::SError::from(err)
-            }).and_then(|data| {
-                match data {
-                    Some(x) => {
-                        $crate::databases::CanCache::from_bit(&x)
-                            .map_err(|err| {
-                                $crate::error::SError::from(err)
-                            })
-                            .map(|rdata| Some(rdata))
-                    },
-                    None => {
-                        let data = $data;
-                        $data.map( |dbdata| {
-                            data.to_bit()
-                                .map_err(|err| {
-                                    $crate::error::SError::from(err)
+            ::redis::Commands::get($conn,$key)
+                .map_err(|err| $crate::errors::SError::from(err) ) //result
+                .and_then(|data:Option<Vec<u8>>| {
+                    match data {
+                        Some(x) => {
+                            $crate::databases::CanCache::from_bit(&*x)
+                                .map_err(|err| $crate::errors::SError::from(err) )
+                        },
+                        None => {
+                            $data
+                                .map_err(|err| $crate::errors::SError::from(err) )
+                                .and_then( |dbdata| {
+                                    dbdata.to_bit()
+                                        .map_err(|err| $crate::errors::SError::from(err) )
+                                        .and_then(|edata:Vec<u8>| {
+                                            ::redis::Commands::set_ex($conn,$key,edata,$ex)
+                                                .map_err(|err| $crate::errors::SError::from(err) )
+                                        })
+                                        .map(|_| dbdata)
                                 })
-                                .map(|edata| {
-                                    ::redis::Commands::set_ex($conn,$key,edata,$ex);
-                                })
-                        });
-                        $data
-                    },
-                }
-            })
+                        },
+                    }
+                })
         }
     );
 }

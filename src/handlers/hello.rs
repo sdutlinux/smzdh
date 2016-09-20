@@ -37,6 +37,6 @@ pub fn test(_: &mut Request) -> IronResult<Response> {
 
 pub fn error_test(_:&mut Request) -> IronResult<Response> {
     let a:Result<i32,i32> = Err(0);
-    let _ = stry!(a,SError::None,"A 的值应该为一个数组。");
+    let _ = stry!(a.map_err(|_| SError::None),"A 的值应该为一个数组。");
     Ok(Response::with((status::Ok, "hello")))
 }

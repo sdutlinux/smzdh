@@ -36,8 +36,9 @@ impl BeforeMiddleware for Cookies {
                     return Ok(());
                 },
             };
-            let bu = stry!(utils::decrypt_cookie(&ebu),
-                           SError::UserNotLogin)[0..16].to_base64(STANDARD);
+            let bu = stry!(utils::decrypt_cookie(&ebu)
+                           .map_err(|_| SError::UserNotLogin))
+                [0..16].to_base64(STANDARD);
             rconn!(rc);
             match rc.get(bu) {
                 Ok(x) => {uid = x},

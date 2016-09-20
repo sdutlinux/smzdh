@@ -15,11 +15,36 @@ macro_rules! self_user {
             $id = $uid
         } else {
             $id = stry!(
-                $str_id.parse::<i32>(),
-                SError::ParamsError,"user_id 格式错误。"
+                $str_id.parse::<i32>()
+                    .map_err(|_| SError::ParamsError),
+                "user_id 格式错误。"
             )
         }
     )
+}
+
+macro_rules! json {
+    ($json:ident,$req:expr) => (
+        let $json = stry!($req.extensions.get::<Json>().ok_or(SError::ParamsError)
+                          ,"Json 格式错误");
+    )
+}
+
+macro_rules! uid {
+    ($v:ident,$req:expr) => {
+        let $v = stry!($req.extensions.get::<Cookies>().ok_or(SError::UserNotLogin));
+    }
+}
+
+macro_rules! user {
+    ($uid:expr,$v:ident,$redis:expr,$postgres:expr) => {
+        let $v: ::smzdh_commons::databases::User = stry!(
+            try_caching!(
+                $redis,format!("user_{}",$uid),
+                databases::find_user_by_id($postgres,$uid)
+            )
+        );
+    }
 }
 
 pub mod users;

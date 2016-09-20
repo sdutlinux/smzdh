@@ -11,19 +11,18 @@ pub fn create_category(req:&mut Request) -> IronResult<Response> {
         req.extensions.get::<Cookies>(),
         SError::UserNotLogin
     );
-    let object = sexpect!(
-        sexpect!(
-            req.extensions.get::<Json>(),
-            "body 必须是 Json",g
-        ).as_object()
-    );
+    json!(json,req);
+    let req_category = stry!(json.as_object().ok_or(SError::ParamsError)
+                         ,"Category 格式因该为 Object。");
     pconn!(pc);
     rconn!(rc);
-    let name = jget!(object,"name",as_string);
-    let desc = jget!(object,"desc",as_string);
-    let user = try_caching!(
-        rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
+    let name = jget!(req_category,"name",as_string);
+    let desc = jget!(req_category,"desc",as_string);
+    let user = stry!(
+        try_caching!(
+            rc,format!("user_{}",uid),
+            databases::find_user_by_id(pc,*uid)
+        )
     );
     let flags = UserFlag::from_bits_truncate(user.flags);
     check!(flags.contains(VERIFY_EMAIL) && flags.contains(IS_ADMIN));
@@ -39,9 +38,11 @@ pub fn category_list(req:&mut Request) -> IronResult<Response> {
     check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = try_caching!(
-        rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
+    let user = stry!(
+        try_caching!(
+            rc,format!("user_{}",uid),
+            databases::find_user_by_id(pc,*uid)
+        )
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let categorys = stry!(databases::get_category_list(pc,skip,limit));
