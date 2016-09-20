@@ -40,7 +40,7 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
     }
     json!(json,req);
     let req_user = stry!(json.as_object().ok_or(SError::ParamsError)
-                     ,"Json 格式因该为 Object。");
+                         ,"Json 格式因该为 Object。");
     let email = jget!(req_user,"email",as_string);
     let password = jget!(req_user,"password",as_string);
     pconn!(pc);
@@ -77,36 +77,11 @@ pub fn fetch(req:&mut Request) -> IronResult<Response> {
     check!(id==*uid);
     pconn!(pc);
     rconn!(rc);
-    //user!(*uid,user,rc,pc);
-    //let user = stry!(
-        //try_caching!(rc,format!("user_{}",uid),
-                     //databases::find_user_by_id(pc,*uid))
-    //);
+    let user = stry!(
+        try_caching!(rc,format!("user_{}",uid),
+                     databases::find_user_by_id(pc,*uid))
+    );
 
-    let user = ::redis::Commands::get(rc,format!("user_{}",uid))
-        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
-        .and_then(|data:Option<Vec<u8>>| {
-            match data {
-                Some(x) => {
-                    ::smzdh_commons::databases::CanCache::from_bit(&*x)
-                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
-                },
-                None => {
-                    databases::find_user_by_id(pc,*uid)
-                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
-                        .and_then(|dbdata| {
-                            dbdata.to_bit()
-                                .map_err(|err| ::smzdh_commons::errors::SError::from(err) )
-                                .and_then(|edata:Vec<u8>| {
-                                    ::redis::Commands::set_ex(rc,format!("user_{}",uid),edata,100)
-                                        .map_err(|err| ::smzdh_commons::errors::SError::from(err))
-                                })
-                                .map(|_| dbdata)
-                        })
-                },
-            }
-        });
-    let user:databases::User = user.unwrap();
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(user.to_json());
     headers::success_json_response(&response)

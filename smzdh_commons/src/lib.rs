@@ -31,11 +31,12 @@ thread_local!(
 #[macro_export]
 macro_rules! jget {
     ($json:expr,$key:expr,$convert:ident) => (
-        sexpect!($json.get($key).and_then(|tmp| {
-            tmp.$convert()
-        }),
-                 $crate::errors::SError::ParamsError,
-                 &*format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]));
+        sexpect!(
+            $json.get($key).and_then(|tmp| {
+                tmp.$convert()
+            }),
+            $crate::errors::SError::ParamsError,
+            &*format!("{} 必须是一个 {} 类型.",$key,&stringify!($convert)[3..]));
     )
 }
 
@@ -178,22 +179,22 @@ macro_rules! try_caching {
     ($conn:expr,$key:expr,$data:expr,$ex:expr) => (
         {
             ::redis::Commands::get($conn,$key)
-                .map_err(|err| $crate::errors::SError::from(err) ) //result
+                .map_err($crate::errors::SError::from) //result
                 .and_then(|data:Option<Vec<u8>>| {
                     match data {
                         Some(x) => {
                             $crate::databases::CanCache::from_bit(&*x)
-                                .map_err(|err| $crate::errors::SError::from(err) )
+                                .map_err($crate::errors::SError::from)
                         },
                         None => {
                             $data
-                                .map_err(|err| $crate::errors::SError::from(err) )
+                                .map_err($crate::errors::SError::from)
                                 .and_then( |dbdata| {
                                     dbdata.to_bit()
-                                        .map_err(|err| $crate::errors::SError::from(err) )
-                                        .and_then(|edata:Vec<u8>| {
+                                        .map_err($crate::errors::SError::from)
+                                        .and_then::<Vec<u8>,_>(|edata:Vec<u8>| {
                                             ::redis::Commands::set_ex($conn,$key,edata,$ex)
-                                                .map_err(|err| $crate::errors::SError::from(err) )
+                                                .map_err($crate::errors::SError::from)
                                         })
                                         .map(|_| dbdata)
                                 })
