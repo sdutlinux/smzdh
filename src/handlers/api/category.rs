@@ -3,13 +3,13 @@ use smzdh_commons::middleware::Cookies;
 use smzdh_commons::middleware::Json;
 use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,IS_ADMIN,CanCache};
 use smzdh_commons::headers;
-use smzdh_commons::errors::{SError,BError};
+use smzdh_commons::errors::{SError};
 use rustc_serialize::json::{self};
 
 pub fn create_category(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(
         req.extensions.get::<Cookies>(),
-        BError::UserNotLogin
+        SError::UserNotLogin
     );
     let object = sexpect!(
         sexpect!(
@@ -34,7 +34,7 @@ pub fn create_category(req:&mut Request) -> IronResult<Response> {
 pub fn category_list(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(
         req.extensions.get::<Cookies>(),
-        BError::UserNotLogin
+        SError::UserNotLogin
     );
     check_sl!(skip,limit,&req.url);
     pconn!(pc);

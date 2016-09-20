@@ -41,7 +41,7 @@ macro_rules! jget {
 
 #[macro_export]
 macro_rules! check {
-    ($check:expr) => (check!($check,$crate::errors::BError::Forbidden));
+    ($check:expr) => (check!($check,$crate::errors::SError::Forbidden));
     ($check:expr,$error:expr) => (
         if $check {} else {
             return ::std::result::Result::Ok(
@@ -51,7 +51,7 @@ macro_rules! check {
         }
     );
     ($check:expr,$error:expr,g) => (check!($check,
-                                           $crate::errors::BError::Forbidden,
+                                           $crate::errors::SError::Forbidden,
                                            $error));
     ($check:expr,$error:expr,$desc:expr) => (
         if $check {} else {
@@ -69,7 +69,8 @@ macro_rules! check {
 
 #[macro_export]
 macro_rules! stry {
-    ($result:expr) => (stry!($result, $crate::errors::SError::InternalServerError));
+    ($result:expr) => (stry!($result,
+                             $crate::errors::SError::InternalServerError(Box::new($crate::errors::SError::None))));
 
     ($result:expr, $modifier:expr) => (match $result {
         ::std::result::Result::Ok(val) => val,
@@ -149,7 +150,7 @@ macro_rules! pconn {
             ::std::result::Result::Err(ref e) => {
                 info!("postgresql conn error {:?}",e);
                 return ::std::result::Result::Err(
-                    $crate::errors::SError::InternalServerError.into_iron_error(
+                    $crate::errors::SError::InternalServerError(Box::new($crate::errors::SError::None)).into_iron_error(
                         None
                     )
                 )
@@ -166,7 +167,9 @@ macro_rules! rconn {
             ::std::result::Result::Err(ref e) => {
                 info!("redis conn error {:?}",e);
                 return ::std::result::Result::Err(
-                    $crate::errors::SError::InternalServerError.into_iron_error(
+                    $crate::errors::SError::InternalServerError(
+                        Box::new($crate::errors::SError::None)
+                    ).into_iron_error(
                         None
                     )
                 );
@@ -180,15 +183,32 @@ macro_rules! try_caching {
     ($conn:expr,$key:expr,$data:expr) => (try_caching!($conn,$key,$data,172800));
     ($conn:expr,$key:expr,$data:expr,$ex:expr) => (
         {
-            let tmp:Option<Vec<u8>> = stry!(::redis::Commands::get($conn,$key));
-            match tmp {
-                Some(x) => stry!($crate::databases::CanCache::from_bit(&x)),
-                None => {
-                    let data = $data;
-                    stry!(::redis::Commands::set_ex($conn,$key,stry!(data.to_bit()),$ex));
-                    data
-                },
-            }
+            ::redis::Commands::get($conn,$key).map_err(|err| {
+                $crate::error::SError::from(err)
+            }).and_then(|data| {
+                match data {
+                    Some(x) => {
+                        $crate::databases::CanCache::from_bit(&x)
+                            .map_err(|err| {
+                                $crate::error::SError::from(err)
+                            })
+                            .map(|rdata| Some(rdata))
+                    },
+                    None => {
+                        let data = $data;
+                        $data.map( |dbdata| {
+                            data.to_bit()
+                                .map_err(|err| {
+                                    $crate::error::SError::from(err)
+                                })
+                                .map(|edata| {
+                                    ::redis::Commands::set_ex($conn,$key,edata,$ex);
+                                })
+                        });
+                        $data
+                    },
+                }
+            })
         }
     );
 }

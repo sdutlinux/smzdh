@@ -11,7 +11,7 @@ use std::io::Read;
 use redis::Commands;
 
 use super::utils;
-use super::errors::{BError};
+use super::errors::{SError};
 
 pub struct Cookies;
 
@@ -37,7 +37,7 @@ impl BeforeMiddleware for Cookies {
                 },
             };
             let bu = stry!(utils::decrypt_cookie(&ebu),
-                           BError::UserNotLogin)[0..16].to_base64(STANDARD);
+                           SError::UserNotLogin)[0..16].to_base64(STANDARD);
             rconn!(rc);
             match rc.get(bu) {
                 Ok(x) => {uid = x},

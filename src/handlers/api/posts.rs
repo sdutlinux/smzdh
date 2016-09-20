@@ -4,7 +4,7 @@ use redis::Commands;
 use rustc_serialize::json::{self,ToJson};
 
 use smzdh_commons::databases::{self,UserFlag,PostFlag,VERIFY_EMAIL,CanCache};
-use smzdh_commons::errors::{SError,BError};
+use smzdh_commons::errors::{SError};
 use smzdh_commons::headers;
 use smzdh_commons::utils;
 use smzdh_commons::middleware::Cookies;
@@ -14,7 +14,7 @@ use std::default::Default;
 
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     let ctg = utils::get_query_params(&req.url,"categroy");
     let mut ctgi:Option<i32> = None;
     if ctg.is_some() {
@@ -26,7 +26,7 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     rconn!(rc);
     let user = try_caching!(
         rc,format!("user_{}",uid),
-        sexpect!(stry!(databases::find_user_by_id(pc,*uid)))
+        databases::find_user_by_id(pc,*uid)
     );
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let posts = stry!(databases::post_list(pc,skip,limit,ctgi));
@@ -48,7 +48,7 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
 
 pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     let id = stry!(
         sexpect!(
             req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
@@ -59,12 +59,12 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
+                            databases::find_user_by_id(pc,*uid));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let post = try_caching!(
         rc,format!("post_{}",id),
         sexpect!(stry!(databases::get_post_by_id(pc,id)
-                       ,BError::ResourceNotFound,"Post 不存在。")),
+                       ,SError::ResourceNotFound,"Post 不存在。")),
         3600
     );
     let mut response = headers::JsonResponse::new();
@@ -74,7 +74,7 @@ pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
 
 pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     let id = stry!(
         sexpect!(
             req.extensions.get::<Router>().and_then(|x| x.find("post_id")),
@@ -85,10 +85,10 @@ pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
+                            databases::find_user_by_id(pc,*uid));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let post = sexpect!(stry!(databases::get_post_by_id(pc,id)
-                              ,BError::ResourceNotFound,"Post 不存在。"));
+                              ,SError::ResourceNotFound,"Post 不存在。"));
     check!(post.author == *uid);
     stry!(databases::update_post_by_id(
         pc,
@@ -107,7 +107,7 @@ pub fn delete_post_by_id(req:&mut Request) -> IronResult<Response> {
 
 pub fn create_post(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     let object = sexpect!(
         sexpect!(req.extensions.get::<Json>(),
                  "body 必须是 Json.",g).as_object(),
@@ -120,7 +120,7 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
     try_caching!(
         rc,format!("category_{}",category_id),
         sexpect!(stry!(databases::get_category_by_id(pc,category_id)),
-                 BError::ResourceNotFound,"Category 不存在。")
+                 SError::ResourceNotFound,"Category 不存在。")
     );
     let user = try_caching!(
         rc,format!("user_{}",uid),

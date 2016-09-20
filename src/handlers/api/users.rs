@@ -9,13 +9,18 @@ use rustc_serialize::json::{ToJson};
 use smzdh_commons::headers;
 use smzdh_commons::utils::{self,CURRENT_SITE};
 use smzdh_commons::email;
-use smzdh_commons::errors::{SError,BError};
+use smzdh_commons::errors::{SError};
 use smzdh_commons::middleware::{Json,Cookies};
 use smzdh_commons::databases::{self,UserFlag,VERIFY_EMAIL,CanCache};
 
 use std::default::Default;
 
 pub fn signup(req:&mut Request) -> IronResult<Response> {
+    req.extensions.get::<Json>().map(
+        |json| {
+            json.as_object()
+        }
+    )
     let object = sexpect!(
         sexpect!(req.extensions.get::<Json>(),
                  "body 必须是 Json.",g).as_object(),
@@ -64,13 +69,13 @@ pub fn signin(req:&mut Request) -> IronResult<Response> {
             Ok(resp)
         })
     } else {
-        Ok(Response::with(SError::Test.to_response(Some("登陆失败".to_string()))))
+        Ok(Response::with(SError::None.to_response(Some("登陆失败".to_string()))))
     }
 }
 
 pub fn fetch(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     let id_str = sexpect!(
         req.extensions.get::<Router>().and_then(|x| x.find("user_id")),
         SError::ParamsError,"未传入 user_id 参数。"
@@ -80,7 +85,7 @@ pub fn fetch(req:&mut Request) -> IronResult<Response> {
     pconn!(pc);
     rconn!(rc);
     let user = try_caching!(rc,format!("user_{}",uid),
-                            sexpect!(stry!(databases::find_user_by_id(pc,*uid))));
+                            databases::find_user_by_id(pc,*uid));
     let mut response = headers::JsonResponse::new();
     response.move_from_btmap(user.to_json());
     headers::success_json_response(&response)
@@ -113,7 +118,7 @@ pub fn verify_email(req:&mut Request) -> IronResult<Response> {
 
 pub fn logout(req:&mut Request) -> IronResult<Response> {
     let uid = sexpect!(req.extensions.get::<Cookies>(),
-                       BError::UserNotLogin);
+                       SError::UserNotLogin);
     info!("User uid:{} logout!",uid);
     headers::success_json_response(&headers::JsonResponse::new()).map(|mut resp| {
 
