@@ -154,7 +154,7 @@ impl User {
     pub fn into_simple_json(self) -> Json {
         let mut tmp = BTreeMap::new();
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
-        tmp.insert(String::from("usename"),Json::String(self.username.clone()));
+        tmp.insert(String::from("username"),Json::String(self.username.clone()));
         Json::Object(tmp)
     }
 }
