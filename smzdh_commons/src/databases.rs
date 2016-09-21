@@ -142,7 +142,7 @@ impl ToJson for User {
         }
         tmp.insert(String::from("id"),Json::I64(self.id as i64));
         tmp.insert(String::from("email"),Json::String(self.email.clone()));
-        tmp.insert(String::from("usename"),Json::String(self.username.clone()));
+        tmp.insert(String::from("username"),Json::String(self.username.clone()));
         tmp.insert(String::from("flags"),Json::Array(flags));
         tmp.insert(String::from("created"),Json::String(
             self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
