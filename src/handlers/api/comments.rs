@@ -6,6 +6,8 @@ use smzdh_commons::errors::{SError};
 use smzdh_commons::headers;
 use smzdh_commons::utils;
 
+use rustc_serialize::json::{self,ToJson};
+
 
 pub fn create_comment(req:&mut Request) -> IronResult<Response> {
     uid!(uid,req);
@@ -52,6 +54,17 @@ pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let comments = stry!(databases::get_comment_by_post_id(pc,pid,skip,limit));
     let mut response = headers::JsonResponse::new();
-    response.insert("comments",&comments);
+    response.insert("comments",
+                    &comments.into_iter().filter_map(|x| {
+                        try_caching!(
+                            rc,
+                            format!("user_{}",x.author),
+                            databases::find_user_by_id(pc,x.author)
+                        ).ok().map(|user| {
+                            let mut comment_obj = x.into_btmap();
+                            comment_obj.insert(String::from("author"),user.into_simple_json());
+                            comment_obj.to_json()
+                        })
+                    }).collect::<Vec<json::Json>>());
     headers::success_json_response(&response)
 }

@@ -352,6 +352,19 @@ impl ToJson for Comment {
     }
 }
 
+impl Comment {
+    pub fn into_btmap(self) -> BTreeMap<String,Json> {
+        let mut tmp = BTreeMap::new();
+        tmp.insert(String::from("id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("content"),Json::String(self.content.clone()));
+        tmp.insert(String::from("author"),Json::I64(self.author as i64));
+        tmp.insert(String::from("post_id"),Json::I64(self.id as i64));
+        tmp.insert(String::from("created"),Json::String(
+            self.created.format("%Y-%m-%d %H:%M:%S").to_string()));
+        tmp
+    }
+}
+
 pub fn create_comment(conn:&Connection,content:&str,author:i32,post_id:i32)
                       -> Result<u64,SError> {
     conn.execute("INSERT INTO comments (content,author,post_id) VALUES ($1,$2,$3)",

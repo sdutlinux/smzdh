@@ -66,8 +66,7 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
                             post_obj.to_json()
                         })
                     }
-            }
-        ).collect::<Vec<json::Json>>());
+            }).collect::<Vec<json::Json>>());
     headers::success_json_response(&response)
 }
 
