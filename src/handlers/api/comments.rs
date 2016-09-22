@@ -35,7 +35,6 @@ pub fn create_comment(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
-    uid!(uid,req);
     let spid = stry!(utils::get_query_params(&req.url,"post_id")
                      .ok_or(SError::ParamsError)
                      ,"未传入 post_id 参数。");
@@ -47,11 +46,6 @@ pub fn get_comments_by_post_id(req:&mut Request) -> IronResult<Response> {
     check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = stry!(
-        try_caching!(rc,format!("user_{}",uid),
-                     databases::find_user_by_id(pc,*uid))
-    );
-    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let comments = stry!(databases::get_comment_by_post_id(pc,pid,skip,limit));
     let mut response = headers::JsonResponse::new();
     response.insert("comments",

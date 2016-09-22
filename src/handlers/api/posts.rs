@@ -29,7 +29,6 @@ macro_rules! post_id {
 }
 
 pub fn posts_list(req:&mut Request) -> IronResult<Response> {
-    uid!(uid,req);
     let ctg = utils::get_query_params(&req.url,"categroy");
     let mut ctgi:Option<i32> = None;
     if ctg.is_some() {
@@ -39,13 +38,6 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
     check_sl!(skip,limit,&req.url);
     pconn!(pc);
     rconn!(rc);
-    let user = stry!(
-        try_caching!(
-            rc,format!("user_{}",uid),
-            databases::find_user_by_id(pc,*uid)
-        )
-    );
-    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let posts = stry!(databases::post_list(pc,skip,limit,ctgi));
     let mut response = headers::JsonResponse::new();
     response.insert(
@@ -71,15 +63,9 @@ pub fn posts_list(req:&mut Request) -> IronResult<Response> {
 }
 
 pub fn get_post_by_id(req:&mut Request) -> IronResult<Response> {
-    uid!(uid,req);
     post_id!(spid,pid,req);
     pconn!(pc);
     rconn!(rc);
-    let user = stry!(
-        try_caching!(rc,format!("user_{}",uid),
-                     databases::find_user_by_id(pc,*uid))
-    );
-    check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
     let post = stry!(try_caching!(
         rc,format!("post_{}",pid),
         databases::get_post_by_id(pc,pid),
