@@ -102,4 +102,8 @@ impl SError {
         let response = self.to_response(desc);
         IronError::new(self,response)
     }
+
+    pub fn new_with(other:Self) -> Self {
+        SError::InternalServerError(Box::new(other))
+    }
 }

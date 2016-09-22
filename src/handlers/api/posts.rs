@@ -130,6 +130,8 @@ pub fn create_post(req:&mut Request) -> IronResult<Response> {
         databases::find_user_by_id(pc,*uid)
     ));
     check!(UserFlag::from_bits_truncate(user.flags).contains(VERIFY_EMAIL));
-    stry!(databases::create_post(pc,title,content,*uid,category_id));
-    headers::sjer()
+    let post_id = stry!(databases::create_post(pc,title,content,*uid,category_id));
+    let mut response = headers::JsonResponse::new();
+    response.insert("post_id",&post_id);
+    headers::success_json_response(&response)
 }

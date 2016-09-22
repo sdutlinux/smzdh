@@ -267,23 +267,24 @@ impl Post {
 }
 
 pub fn create_post(conn:&Connection,title:&str,content:&str,author:i32,category_id:i32)
-                   -> Result<u64,SError> {
+                   -> Result<i32,SError> {
     let prepare = try!(
         conn.prepare_cached(
             "INSERT INTO posts (title,content,author) VALUES ($1,$2,$3) RETURNING id"
         )
     );
+    let ipp = try!(conn.prepare_cached(
+        "INSERT INTO post_category (post_id,category_id) VALUES ($1,$2)"
+    ));
     let result = try!(prepare.query(&[&title,&content,&author]));
-    match result.iter().next() {
-        Some(x) => {
-            let post_id:i32 = x.get("id");
-            let ipp = try!(conn.prepare_cached(
-                "INSERT INTO post_category (post_id,category_id) VALUES ($1,$2)"
-            ));
-            ipp.execute(&[&post_id,&category_id]).map_err(From::from)
-        },
-        None => unreachable!(),
-    }
+    result.iter().next()
+        .ok_or_else(|| SError::new_with(SError::ResourceNotFound))
+        .and_then(|row| {
+            let post_id:i32 = row.get("id");
+            ipp.execute(&[&post_id,&category_id])
+                .map(|_| post_id)
+                .map_err(From::from)
+        })
 }
 
 pub fn get_post_by_id(conn:&Connection,id:i32) -> Result<Post,SError> {
