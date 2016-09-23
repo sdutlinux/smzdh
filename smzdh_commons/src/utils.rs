@@ -12,7 +12,7 @@ use super::errors::SError;
 
 use std::convert::From;
 
-pub static CURRENT_SITE:&'static str =  "http://fuck.gotit.asia";
+pub static CURRENT_SITE:&'static str =  "http://fuck.gotit.asia/api";
 
 pub fn gen_string(len:usize) -> String {
     rand::thread_rng()
