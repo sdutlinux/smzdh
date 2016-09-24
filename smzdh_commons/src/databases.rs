@@ -303,11 +303,11 @@ pub fn post_list(conn:&Connection,skip:i64,limit:i64,category_id:Option<i32>)
                  -> Result<Vec<Post>,SError> {
     match category_id {
         Some(x) => {
-            conn.query("SELECT id,content,author,flags,created FROM posts LEFT JOIN post_category ON posts.id = post_category.post_id WHERE post_category.category_id = $1 OFFSET $2 LIMIT $3",
+            conn.query("SELECT id,content,author,flags,created FROM posts LEFT JOIN post_category ON posts.id = post_category.post_id WHERE post_category.category_id = $1 OFFSET $2 LIMIT $3" ORDER BY created DESC,
                        &[&x,&skip,&limit])
         },
         None => {
-            conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2",
+            conn.query("SELECT id,title,content,author,flags,created FROM posts OFFSET $1 LIMIT $2 ORDER BY created DESC",
                        &[&skip,&limit])
         }
     }
@@ -451,6 +451,8 @@ impl Category {
         Json::Object(tmp)
     }
 }
+
+
 
 
 
