@@ -1,5 +1,5 @@
 use postgres::error as pe;
-use postgres::{Connection, SslMode};
+use postgres::{Connection, TlsMode};
 use postgres::rows::Row;
 use postgres::types::ToSql;
 use super::config;
@@ -14,7 +14,7 @@ use bincode::SizeLimit;
 use bincode::rustc_serialize::{encode, decode,EncodingResult,DecodingResult};
 
 fn create_conn(url:&str) -> Result<Connection,pe::ConnectError> {
-    Connection::connect(url,SslMode::None)
+    Connection::connect(url,TlsMode::None)
 }
 
 pub fn conn() -> Result<Connection,pe::ConnectError> {

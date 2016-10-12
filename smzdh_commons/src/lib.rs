@@ -21,7 +21,7 @@ extern crate regex;
 
 thread_local!(
     pub static PC:Result<::postgres::Connection,::postgres::error::ConnectError>
-        = ::postgres::Connection::connect(config::URL,::postgres::SslMode::None);
+        = ::postgres::Connection::connect(config::URL,::postgres::TlsMode::None);
     pub static RC:Result<::redis::Connection,::redis::RedisError>
         = redis::Client::open(config::REDIS)
         .and_then(|c| c.get_connection());

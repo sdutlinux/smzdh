@@ -18,5 +18,5 @@ plugin = "*"
 hyper = "*"
 bitflags = "*"
 bincode = {version = "*", features = ["rustc-serialize"]}
-postgres = {version = "*", features = ["rustc-serialize","chrono"]}
+postgres = {version = "*", features = ["with-rustc-serialize","with-chrono"]}
 regex = "*"
